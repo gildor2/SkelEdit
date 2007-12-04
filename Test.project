@@ -19,7 +19,11 @@ DEFINES    = WXUSINGDLL
 ALLOW_MISSING_INCLUDES = 1
 
 sources(MAIN) = {
-	main.cpp
+	MainApp.cpp
+	# core libraries
+	Core.cpp
+	Math3D.cpp
+	GlViewport.cpp
 }
 
 target(executable, Test, MAIN, MAIN)
