@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource version="2.3.0.1" xmlns="http://www.wxwidgets.org/wxxrc">
+    <object class="wxFrame" name="ID_MAINFRAME2" subclass="MyFrame2">
+        <style>wxDEFAULT_FRAME_STYLE</style>
+        <size>500,400</size>
+        <title>Dialog</title>
+        <object class="wxMenuBar" name="ID_MENUBAR2">
+            <object class="wxMenu">
+                <label>File</label>
+                <object class="wxMenuItem" name="wxID_EXIT">
+                    <label>E&amp;xit\tAlt+X</label>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>View</label>
+                <object class="wxMenuItem" name="ID_FULLSCREEN">
+                    <label>Fullscreen\tF11</label>
+                    <checkable>1</checkable>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>Window</label>
+            </object>
+        </object>
+        <object class="wxAuiNotebook" name="ID_AUINOTEBOOK1">
+            <style>wxAUI_NB_TOP|wxNO_BORDER</style>
+            <object class="notebookpage">
+                <label>Tab</label>
+                <object class="wxPanel" name="ID_PANEL7">
+                    <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                </object>
+            </object>
+            <object class="notebookpage">
+                <label>Tab</label>
+                <object class="wxPanel" name="ID_PANEL8">
+                    <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                </object>
+            </object>
+        </object>
+        <object class="wxAuiNotebook" name="ID_AUINOTEBOOK2">
+            <style>wxAUI_NB_TOP|wxNO_BORDER</style>
+            <object class="notebookpage">
+                <label>Tab</label>
+                <object class="wxPanel" name="ID_PANEL9">
+                    <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                </object>
+            </object>
+            <object class="notebookpage">
+                <label>Tab</label>
+                <object class="wxPanel" name="ID_PANEL10">
+                    <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                </object>
+            </object>
+            <object class="notebookpage">
+                <label>Tab</label>
+                <object class="wxPanel" name="ID_PANEL11">
+                    <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                </object>
+            </object>
+        </object>
+        <object class="wxPanel" name="ID_PANEL12">
+            <style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
+            <bg>#400000</bg>
+        </object>
+        <object class="wxStatusBar" name="ID_STATUSBAR2">
+            <style>wxST_SIZEGRIP|wxNO_BORDER</style>
+            <fields>2</fields>
+            <widths></widths>
+        </object>
+    </object>
+</resource>

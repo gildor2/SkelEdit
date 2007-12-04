@@ -1,0 +1,25 @@
+# perl highlighting
+
+LIBC       = shared
+#LIBC       = static
+#OUT        = Release
+#MAPFILES   = 1
+#CONSOLE    = 1
+OPTIMIZE   = size
+
+PDB        = 1
+
+INCLUDES   = libs/include
+LIBRARIES  = libs
+OBJDIR     = obj
+STDLIBS    = wxmsw28 wxmsw28_gl opengl32 glu32
+
+DEFINES    = WXUSINGDLL
+
+ALLOW_MISSING_INCLUDES = 1
+
+sources(MAIN) = {
+	main.cpp
+}
+
+target(executable, Test, MAIN, MAIN)

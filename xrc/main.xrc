@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource version="2.3.0.1" xmlns="http://www.wxwidgets.org/wxxrc">
+    <object class="wxFrame" name="ID_MAINFRAME">
+        <style>wxDEFAULT_FRAME_STYLE</style>
+        <size>500,400</size>
+        <title>Skeletal Mesh Editor</title>
+        <object class="wxMenuBar" name="ID_MENUBAR1">
+            <object class="wxMenu">
+                <label>&amp;File</label>
+                <object class="wxMenuItem" name="wxID_EXIT">
+                    <label>E&amp;xit\tAlt+X</label>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>&amp;View</label>
+                <object class="wxMenuItem" name="ID_FULLSCREEN">
+                    <label>View &amp;Fullscreen\tF11</label>
+                    <checkable>1</checkable>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>&amp;Window</label>
+                <object class="wxMenuItem" name="ID_HIDETOPPANE">
+                    <label>Show &amp;Browser Window\tAlt+1</label>
+                    <checkable>1</checkable>
+                    <checked>1</checked>
+                </object>
+                <object class="wxMenuItem" name="ID_HIDEBOTTOMPANE">
+                    <label>Show &amp;Properties Window\tAlt+2</label>
+                    <checkable>1</checkable>
+                    <checked>1</checked>
+                </object>
+            </object>
+        </object>
+        <object class="wxStatusBar" name="ID_STATUSBAR1">
+            <style>wxST_SIZEGRIP|wxNO_BORDER</style>
+            <fields>2</fields>
+            <widths></widths>
+        </object>
+        <object class="wxSplitterWindow" name="ID_MAINSPLITTER">
+            <size>100,100</size>
+            <style>wxNO_BORDER</style>
+            <orientation>vertical</orientation>
+            <sashpos>200</sashpos>
+            <minsize>150</minsize>
+            <object class="wxSplitterWindow" name="ID_LEFTSPLITTER">
+                <size>100,100</size>
+                <style>wxNO_BORDER</style>
+                <orientation>horizontal</orientation>
+                <sashpos>150</sashpos>
+                <minsize>100</minsize>
+                <object class="wxPanel" name="ID_TOPPANE">
+                    <style>wxTAB_TRAVERSAL</style>
+                    <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                            <flag>wxGROW|wxALL</flag>
+                            <border>5</border>
+                            <object class="wxStaticText" name="wxID_STATIC">
+                                <font>
+                                    <size>8</size>
+                                    <family>swiss</family>
+                                    <weight>bold</weight>
+                                    <face>Tahoma</face>
+                                </font>
+                                <style>wxALIGN_CENTRE</style>
+                                <fg>#FFFFFF</fg>
+                                <bg>#000000</bg>
+                                <label>Browser</label>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <flag>wxGROW|wxALL</flag>
+                            <border>3</border>
+                            <option>1</option>
+                            <object class="wxNotebook">
+                                <style>wxBK_TOP|wxNO_BORDER</style>
+                                <object class="notebookpage">
+                                    <label>Mesh</label>
+                                    <object class="wxPanel" name="ID_PANEL1">
+                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                        <object class="wxFlexGridSizer">
+                                            <cols>1</cols>
+                                            <rows>2</rows>
+                                            <vgap>0</vgap>
+                                            <hgap>0</hgap>
+                                            <growablecols>0</growablecols>
+                                            <object class="sizeritem">
+                                                <flag>wxALIGN_LEFT|wxALIGN_BOTTOM|wxALL</flag>
+                                                <border>5</border>
+                                                <object class="wxStaticText" name="wxID_STATIC">
+                                                    <label>Skeletal Mesh</label>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                <border>5</border>
+                                                <option>1</option>
+                                                <object class="wxTextCtrl" name="ID_TEXTCTRL1">
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                                <object class="notebookpage">
+                                    <label>Animation</label>
+                                    <object class="wxPanel" name="ID_PANEL3">
+                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                        <object class="wxBoxSizer">
+                                            <orient>wxVERTICAL</orient>
+                                            <object class="sizeritem">
+                                                <flag>wxGROW|wxALL</flag>
+                                                <border>5</border>
+                                                <object class="wxButton" name="ID_BUTTON1">
+                                                    <label>Button</label>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <flag>wxGROW|wxALL</flag>
+                                                <border>5</border>
+                                                <object class="wxBoxSizer">
+                                                    <orient>wxHORIZONTAL</orient>
+                                                    <object class="sizeritem">
+                                                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                        <border>5</border>
+                                                        <option>1</option>
+                                                        <object class="wxTextCtrl" name="ID_TEXTCTRL2">
+                                                        </object>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+                <object class="wxPanel" name="ID_BOTTOMPANE">
+                    <style>wxTAB_TRAVERSAL</style>
+                    <object class="wxBoxSizer">
+                        <orient>wxVERTICAL</orient>
+                        <object class="sizeritem">
+                            <flag>wxGROW|wxALL</flag>
+                            <border>5</border>
+                            <object class="wxStaticText" name="wxID_STATIC">
+                                <font>
+                                    <size>8</size>
+                                    <family>swiss</family>
+                                    <weight>bold</weight>
+                                    <face>Tahoma</face>
+                                </font>
+                                <style>wxALIGN_CENTRE</style>
+                                <fg>#FFFFFF</fg>
+                                <bg>#000000</bg>
+                                <label>Properties</label>
+                            </object>
+                        </object>
+                        <object class="sizeritem">
+                            <flag>wxGROW|wxALL</flag>
+                            <border>3</border>
+                            <option>1</option>
+                            <object class="wxNotebook">
+                                <style>wxBK_DEFAULT</style>
+                                <object class="notebookpage">
+                                    <label>Mesh</label>
+                                    <object class="wxPanel" name="ID_PANEL4">
+                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    </object>
+                                </object>
+                                <object class="notebookpage">
+                                    <label>AnimSet</label>
+                                    <object class="wxPanel" name="ID_PANEL5">
+                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    </object>
+                                </object>
+                                <object class="notebookpage">
+                                    <label>AnimSequence</label>
+                                    <object class="wxPanel" name="ID_PANEL6">
+                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="wxPanel" name="ID_RIGHTPANE">
+                <size>200,200</size>
+                <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                <bg>#400000</bg>
+            </object>
+        </object>
+    </object>
+</resource>
