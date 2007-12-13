@@ -99,26 +99,6 @@ void appUnwindThrow(const char *fmt, ...)
 
 
 /*-----------------------------------------------------------------------------
-	Memory management
------------------------------------------------------------------------------*/
-
-void *appMalloc(int size)
-{
-	assert(size >= 0);
-	void *data = malloc(size);
-	if (size > 0)
-		memset(data, 0, size);
-	return data;
-}
-
-
-void appFree(void *ptr)
-{
-	free(ptr);
-}
-
-
-/*-----------------------------------------------------------------------------
 	Miscellaneous
 -----------------------------------------------------------------------------*/
 
@@ -160,4 +140,59 @@ void appStrcatn(char *dst, int count, const char *src)
 	int maxLen = count - (p - dst);
 	if (maxLen > 1)
 		appStrncpyz(p, src, maxLen);
+}
+
+
+/*-----------------------------------------------------------------------------
+	String allocation
+-----------------------------------------------------------------------------*/
+
+char *appStrdup(const char *str)
+{
+//	MEM_ALLOCATOR(str);
+	int size = strlen(str) + 1;
+	char *out = (char*)appMalloc(size);
+	memcpy(out, str, size);
+	return out;
+}
+
+char *appStrdup(const char *str, CMemoryChain *chain)
+{
+	assert(chain);
+	int size = strlen(str) + 1;
+	char *out = (char*)chain->Alloc(size);
+	memcpy(out, str, size);
+	return out;
+}
+
+
+/*-----------------------------------------------------------------------------
+	CArchive methods
+-----------------------------------------------------------------------------*/
+
+CArchive& operator<<(CArchive &Ar, CCompactIndex &I)
+{
+	if (Ar.IsLoading)
+	{
+		byte b;
+		Ar << b;
+		int sign  = b & 0x80;
+		int shift = 6;
+		int r     = b & 0x3F;
+		if (b & 0x40)
+		{
+			do
+			{
+				Ar << b;
+				r |= (b & 0x7F) << shift;
+				shift += 7;
+			} while (b & 0x80);
+		}
+		I.Value = sign ? -r : r;
+	}
+	else
+	{
+		appError("write AR_INDEX is not implemented");
+	}
+	return Ar;
 }

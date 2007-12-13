@@ -1,5 +1,7 @@
 # perl highlighting
 
+TEST = 0
+
 LIBC       = shared
 #LIBC       = static
 #OUT        = Release
@@ -12,16 +14,26 @@ PDB        = 1
 INCLUDES   = libs/include
 LIBRARIES  = libs
 OBJDIR     = obj
-STDLIBS    = wxmsw28 wxmsw28_gl opengl32 glu32
+STDLIBS    = wxmsw28 wxmsw28_gl wxcode_msw28_propgrid
 
 DEFINES    = WXUSINGDLL
 
 ALLOW_MISSING_INCLUDES = 1
 
+!if "$TEST" eq "1"
+	CONSOLE = 1
+	DEFINES += TEST
+!endif
+
 sources(MAIN) = {
+!if "$TEST" ne "1"
 	MainApp.cpp
+	PropEdit.cpp
+!endif
 	# core libraries
 	Core.cpp
+	Object.cpp
+	Memory.cpp
 	Math3D.cpp
 	GlViewport.cpp
 }

@@ -2,11 +2,16 @@
 <resource version="2.3.0.1" xmlns="http://www.wxwidgets.org/wxxrc">
     <object class="wxFrame" name="ID_MAINFRAME">
         <style>wxDEFAULT_FRAME_STYLE</style>
-        <size>500,400</size>
+        <size>600,450</size>
         <title>Skeletal Mesh Editor</title>
         <object class="wxMenuBar" name="ID_MENUBAR1">
             <object class="wxMenu">
                 <label>&amp;File</label>
+                <object class="wxMenuItem" name="ID_MENUTEST">
+                    <label>Test\tAlt+S</label>
+                </object>
+                <object class="separator">
+                </object>
                 <object class="wxMenuItem" name="wxID_EXIT">
                     <label>E&amp;xit\tAlt+X</label>
                 </object>
@@ -160,26 +165,8 @@
                             <flag>wxGROW|wxALL</flag>
                             <border>3</border>
                             <option>1</option>
-                            <object class="wxNotebook">
+                            <object class="wxNotebook" name="ID_PROPBASE">
                                 <style>wxBK_DEFAULT</style>
-                                <object class="notebookpage">
-                                    <label>Mesh</label>
-                                    <object class="wxPanel" name="ID_PANEL4">
-                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
-                                    </object>
-                                </object>
-                                <object class="notebookpage">
-                                    <label>AnimSet</label>
-                                    <object class="wxPanel" name="ID_PANEL5">
-                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
-                                    </object>
-                                </object>
-                                <object class="notebookpage">
-                                    <label>AnimSequence</label>
-                                    <object class="wxPanel" name="ID_PANEL6">
-                                        <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
-                                    </object>
-                                </object>
                             </object>
                         </object>
                     </object>

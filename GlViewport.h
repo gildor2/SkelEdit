@@ -1,6 +1,30 @@
 #ifndef __GLWINDOW_H__
 #define __GLWINDOW_H__
 
+#if _WIN32
+#	ifndef APIENTRY
+#		define APIENTRY __stdcall
+#	endif
+#	ifndef WINGDIAPI
+#		define WINGDIAPI
+		typedef unsigned		HDC;
+		typedef unsigned		HGLRC;
+		typedef const char *	LPCSTR;
+		typedef int				BOOL;
+		typedef unsigned char	BYTE;
+		typedef unsigned short	WORD;
+		typedef unsigned int	UINT;
+		typedef int (APIENTRY *PROC)();
+		typedef void PIXELFORMATDESCRIPTOR;		// structure
+		typedef PIXELFORMATDESCRIPTOR * LPPIXELFORMATDESCRIPTOR;
+#	endif // WINGDIAPI
+#	ifndef CONST
+#		define CONST const
+#	endif
+#endif
+
+#include <GL/gl.h>
+
 
 #include "Core.h"
 
