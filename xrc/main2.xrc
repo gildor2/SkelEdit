@@ -28,6 +28,9 @@
                 <label>Tab</label>
                 <object class="wxPanel" name="ID_PANEL7">
                     <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>Static text</label>
+                    </object>
                 </object>
             </object>
             <object class="notebookpage">
@@ -61,9 +64,6 @@
         <object class="wxPanel" name="ID_PANEL12">
             <style>wxRAISED_BORDER|wxTAB_TRAVERSAL</style>
             <bg>#400000</bg>
-            <object class="wxStaticBox" name="wxID_STATIC">
-                <label>Static box</label>
-            </object>
         </object>
         <object class="wxStatusBar" name="ID_STATUSBAR2">
             <style>wxST_SIZEGRIP|wxNO_BORDER</style>

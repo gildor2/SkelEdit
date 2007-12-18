@@ -16,7 +16,7 @@ public:
 	{
 		guard(CFileReader::CFileReader);
 		if (!f)
-			appError("Unable to open file %s", Filename);
+			appError("Unable to open file \"%s\"", Filename);
 		IsLoading = true;
 		unguardf(("%s", Filename));
 	}

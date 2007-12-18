@@ -30,6 +30,7 @@ sources(MAIN) = {
 	MainApp.cpp
 	PropEdit.cpp
 !endif
+	ImportPsk.cpp
 	# core libraries
 	Core.cpp
 	Object.cpp

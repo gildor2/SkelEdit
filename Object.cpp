@@ -21,6 +21,7 @@ CType::CType(const char *AName, unsigned ASize, unsigned AAlign)
 ,	TypeSize(ASize)
 ,	TypeAlign(AAlign)
 ,	IsStruc(false)
+,	IsEnum(false)
 {
 	guard(RegisterType);
 
@@ -158,13 +159,13 @@ void ParseTypeinfoFile(CArchive &Ar)
 		case TYPE_ENUM:
 			{
 				CEnum *Enum = new (TypeChain) CEnum(TypeName);
-				appNotify("Reading enum [%s]", TypeName);	//!!
+//				appNotify("Reading enum [%s]", TypeName);	//!!
 				while (true)
 				{
 					char EnumItem[256];
 					ReadString(Ar, ARRAY_ARG(EnumItem));
 					if (!EnumItem[0]) break;			// end marker
-					appNotify("  . [%s]", EnumItem);	//!!
+//					appNotify("  . [%s]", EnumItem);	//!!
 					Enum->AddValue(EnumItem);
 				}
 			}

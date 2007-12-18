@@ -92,6 +92,11 @@ struct CVec3
 	void FindAxisVectors(CVec3 &right, CVec3 &up) const;
 
 	friend float dot(const CVec3&, const CVec3&);
+
+	friend CArchive& operator<<(CArchive &Ar, CVec3 &V)
+	{
+		return Ar << V[0] << V[1] << V[2];
+	}
 };
 
 

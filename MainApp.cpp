@@ -3,19 +3,17 @@
 #include <wx/xrc/xmlres.h>		// loading .xrc files
 #include <wx/splitter.h>
 #include <wx/notebook.h>
-// wxGLCanvas
-#include <wx/glcanvas.h>
-// wxPropertyGrid
+#include <wx/glcanvas.h>		// wxGLCanvas
+
+// Third-party wxPropertyGrid
 #include <wx/propgrid/propgrid.h>
 
 
 #include "GlViewport.h"
 #include "FileReaderStdio.h"
+#include "Import.h"
 
-
-//?? move outside
-//?? header: include "wx", "Core" ? (what about additional wxWidgets headers AFTER Core.h?)
-void SetupPropGrid(wxPropertyGrid *Grid, CStruct *Type, void *Data);
+#include "PropEdit.h"
 
 
 #define CLEAR_COLOR		0.2, 0.3, 0.2, 0
@@ -61,29 +59,7 @@ void InitTypeinfo2()
 	GEditStruc.Orient.axis[1].Set(0, 1, 0);
 	GEditStruc.Orient.axis[2].Set(0, 0, 1);
 	GEditStruc.FinishField = 999777555;
-/*	GEditStruc.field1 = 12345;
-	GEditStruc.field2 = 222.12345;
-	GEditStruc.field3 = 32767;
-	GEditStruc.field4 = true;
-
-	CStruct *Vec = new CStruct("Vec");	// == CVec3
-		Vec->AddField("X", "float");
-		Vec->AddField("Y", "float");
-		Vec->AddField("Z", "float");
-	Vec->Finalize();
-
-	CStruct *Coord = new CStruct("Coord");	// == CCoords
-		Coord->AddField("origin", "Vec");
-		Coord->AddField("axis", "Vec", 3);
-	Coord->Finalize();
-
-	CStruct *Struc = new CStruct("FStruc");
-		Struc->AddField("org",  "Coord");
-		Struc->AddField("field1", "int");
-		Struc->AddField("field2", "float");
-		Struc->AddField("field3", "short");
-		Struc->AddField("field4", "bool");
-	Struc->Finalize(); */
+	GEditStruc.EnumValue = SE_VALUE3;
 
 	unguard;
 }
@@ -139,6 +115,8 @@ protected:
 
 	void Render()
 	{
+		guard(GLCanvas::Render);
+
 		// prepare frame
 		glClearColor(CLEAR_COLOR);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -161,12 +139,17 @@ protected:
 		glEnd();
 		glColor3f(1, 1, 1);
 
+		ShowMesh();			//!!!! testing !!!!
+
 		GL::Set2Dmode();
 		static int frame = 0;
 		GL::textf("Frame: "S_GREEN"%d\n", frame++);	//!!
 
 		// finish frame
+		glFinish();			//????
 		SwapBuffers();
+
+		unguard;
 	}
 
 	void OnSize(wxSizeEvent &event)
@@ -255,10 +238,15 @@ private:
 	wxSplitterWindow	*mLeftSplitter, *mMainSplitter;
 	int					mMainSplitterPos;
 	GLCanvas			*mCanvas;
-	wxPropertyGrid		*mMeshProps;
+	WPropEdit			*mMeshPropEdit;
+	bool				mShowWireframe;
 
 public:
+	/**
+	 *	Constructor
+	 */
 	MyFrame(const wxString &title)
+	:	mShowWireframe(false)
 	{
 		guard(MyFrame::MyFrame);
 
@@ -284,28 +272,19 @@ public:
 		mRightFrame = mCanvas;
 
 		// create property grid pages
-		mMeshProps = new wxPropertyGrid(
-			propBase,
-			wxID_ANY,
-			wxDefaultPosition,
-			wxDefaultSize,
-			/*wxPG_AUTO_SORT |*/ wxPG_SPLITTER_AUTO_CENTER | wxPG_BOLD_MODIFIED | wxPG_DEFAULT_STYLE
-		);
-		mMeshProps->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
-		propBase->AddPage(mMeshProps, "Mesh");
-
-		//!! remove
-		// Add int property
-		mMeshProps->Append( new wxIntProperty(wxT("IntProperty"), wxPG_LABEL, 12345678) );
-		// Add float property (value type is actually double)
-		mMeshProps->Append( new wxFloatProperty(wxT("FloatProperty"), wxPG_LABEL, 12345.678) );
-		// Add a bool property
-		mMeshProps->Append( new wxBoolProperty(wxT("BoolProperty"), wxPG_LABEL, false) );
-
-
+		mMeshPropEdit = new WPropEdit(propBase, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+			wxPG_SPLITTER_AUTO_CENTER | wxPG_BOLD_MODIFIED | wxSUNKEN_BORDER | wxPG_DEFAULT_STYLE);
+		mMeshPropEdit->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
+		propBase->AddPage(mMeshPropEdit, "Mesh");
 
 		// init some controls
+		mMainSplitter->SetSashPosition(250);
 		mLeftSplitter->SetSashPosition(0);
+
+		int id = XRCID("ID_CLOSE_TOP");
+		FindWindow(id)->Connect(id, wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideTop2), NULL, this);
+		id = XRCID("ID_CLOSE_BOTTOM");
+		FindWindow(id)->Connect(id, wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideBottom2), NULL, this);
 
 		//!! TEST, REMOVE
 		InitTypeinfo2();
@@ -324,8 +303,13 @@ protected:
 		ShowFullScreen(event.IsChecked(), wxFULLSCREEN_NOBORDER|wxFULLSCREEN_NOCAPTION);
 	}
 
+	/**
+	 *	Hiding and showing frames
+	 */
 	void ShowFrame(int frameNum, bool value)
 	{
+		guard(MyFrame::ShowFrame);
+
 		// buggy way to support frame hiding ...
 		// too much operations pending, disable drawing on window
 		Freeze();
@@ -365,6 +349,8 @@ protected:
 		}
 		// draw the window
 		Thaw();
+
+		unguard;
 	}
 
 	void OnHideTop(wxCommandEvent &event)
@@ -374,15 +360,31 @@ protected:
 		unguard;
 	}
 
+	void OnHideTop2(wxMouseEvent &event)
+	{
+		wxMenuItem *Item = GetMenuBar()->FindItem(XRCID("ID_HIDETOPPANE"));
+		assert(Item);
+		Item->Check(false);
+		ShowFrame(0, false);
+	}
+
 	void OnHideBottom(wxCommandEvent &event)
 	{
 		ShowFrame(1, event.IsChecked());
 	}
 
+	void OnHideBottom2(wxMouseEvent &event)
+	{
+		wxMenuItem *Item = GetMenuBar()->FindItem(XRCID("ID_HIDEBOTTOMPANE"));
+		assert(Item);
+		Item->Check(false);
+		ShowFrame(1, false);
+	}
+
 	void OnMenuTest(wxCommandEvent &event)
 	{
 		//!! TEST STUFF
-		SetupPropGrid(mMeshProps, (CStruct*)FindType("Test"), &GEditStruc);
+		mMeshPropEdit->AttachObject((CStruct*)FindType("Test"), &GEditStruc);
 #if 0
 		FILE *f = fopen("test.log", "a");
 		fprintf(f, "\n\n---------\n\n");
@@ -390,6 +392,53 @@ protected:
 		fclose(f);
 #endif
 	}
+
+	/**
+	 *	Import mesh from foreign file
+	 */
+	void OnImportMesh(wxCommandEvent &event)
+	{
+		guard(MyFrame::OnImportMesh);
+
+		wxFileDialog dlg(this, "Import mesh from file ...", "", "",
+			"ActorX mesh files (*.psk)|*.psk",
+			wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		if (dlg.ShowModal())
+		{
+			CFileReader Ar(dlg.GetPath().c_str());	// note: will throw appError when failed
+			ImportPsk(Ar);
+		}
+
+		unguard;
+	}
+
+	/**
+	 *	Support for toggle some bool variable using menu and toolbar
+	 */
+	void SyncToggles(const char *name, bool value)
+	{
+		char buf[256];
+		// set menu state
+		appSprintf(ARRAY_ARG(buf), "ID_MNU_%s", name);
+		GetMenuBar()->FindItem(XRCID(buf))->Check(value);
+		// set button state
+		appSprintf(ARRAY_ARG(buf), "ID_BTN_%s", name);
+		GetToolBar()->ToggleTool(XRCID(buf), value);
+	}
+
+#define HANDLE_TOGGLE(name, var)			\
+	void On_##name(wxCommandEvent &event)	\
+	{										\
+		var = !var;							\
+		SyncToggles(#name, var);			\
+	}
+
+#define HOOK_TOGGLE(name)					\
+	EVT_MENU(XRCID("ID_MNU_"#name), MyFrame::On_##name) \
+	EVT_MENU(XRCID("ID_BTN_"#name), MyFrame::On_##name)
+
+	// togglers ...
+	HANDLE_TOGGLE(WIREFRAME, mShowWireframe)
 
 private:
 	DECLARE_EVENT_TABLE()
@@ -401,7 +450,9 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
 	EVT_MENU(XRCID("ID_FULLSCREEN"),     MyFrame::OnFullscreen)
 	EVT_MENU(XRCID("ID_HIDETOPPANE"),    MyFrame::OnHideTop   )
 	EVT_MENU(XRCID("ID_HIDEBOTTOMPANE"), MyFrame::OnHideBottom)
-	EVT_MENU(XRCID("ID_MENUTEST"),       MyFrame::OnMenuTest  )
+	EVT_MENU(XRCID("ID_MENUTEST"),       MyFrame::OnMenuTest  )	//???
+	EVT_MENU(XRCID("ID_MESHIMPORT"),     MyFrame::OnImportMesh)
+	HOOK_TOGGLE(WIREFRAME)
 END_EVENT_TABLE()
 
 
@@ -430,7 +481,18 @@ static long WINAPI ExceptFilter(struct _EXCEPTION_POINTERS *info)
 class MyApp : public wxApp
 {
 public:
-	// `Main program' equivalent
+	static void DisplayError()
+	{
+		if (GErrorHistory[0])
+			appNotify("ERROR: %s\n", GErrorHistory);
+		else
+			appNotify("Unknown error\n");
+		wxMessageBox(GErrorHistory, "Fatal error", wxOK | wxICON_ERROR);
+	}
+
+	/**
+	 *	Initialize application. Return 'false' when failed.
+	 */
 	virtual bool OnInit()
 	{
 #if _WIN32
@@ -440,17 +502,19 @@ public:
 		{
 			guard(MyApp::OnInit);
 
+			wxInitAllImageHandlers();
 			// initialize wxWidgets resource system
 			wxXmlResource::Get()->InitAllHandlers();
 			if (!wxXmlResource::Get()->Load("xrc/main.xrc"))
 				return false;
 			// Create the main frame window
 			MyFrame *frame = new MyFrame("");
+			// Show the frame
+			frame->Show(true);
 			// create tooltip control with multiline handling (all subsequent calls
 			// to change tooltip will use window, created by following line)
 			frame->SetToolTip("\n");
-			// Show the frame
-			frame->Show(true);
+			frame->SetToolTip(NULL);
 			// return true to continue
 			return true;
 
@@ -458,12 +522,7 @@ public:
 		}
 		catch (...)
 		{
-			//?? same code in OnRun(), try to combine (difference: 'return false')
-			if (GErrorHistory[0])
-				appNotify("ERROR: %s\n", GErrorHistory);
-			else
-				appNotify("Unknown error\n");
-			wxMessageBox(GErrorHistory, "Fatal error", wxOK | wxICON_ERROR);
+			DisplayError();
 			return false;
 		}
 	}
@@ -482,11 +541,7 @@ public:
 		}
 		catch (...)
 		{
-			if (GErrorHistory[0])
-				appNotify("ERROR: %s\n", GErrorHistory);
-			else
-				appNotify("Unknown error\n");
-			wxMessageBox(GErrorHistory, "Fatal error", wxOK | wxICON_ERROR);
+			DisplayError();
 			return 1;
 		}
 	}

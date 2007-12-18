@@ -67,7 +67,7 @@ class Test;
  * Sample variable with hint
  * (this is a multi-line comment test)
  */
-var(Test) int	IntegerValue;
+var		int		IntegerValue;
 
 /**
  * Editable IntegerValueEd
@@ -127,9 +127,9 @@ struct /*native*/ Coords
 	/** this is an orientation */
 	var() Vector axis[3];
 	/** change alignment */
-	var bool StrangeVar;
+	var(Extras) editconst bool StrangeVar;
 	/** native no-export variable */
-	var noexport int SomeNativePointer;
+	var(Extras) noexport int SomeNativePointer;
 structcpptext
 {
 	// native implementation of SomeNativePointer
@@ -153,7 +153,7 @@ structcpptext
 
 
 /** plane comment for Origin */
-var(Orientation)	Vector	Origin;
+var(Orientation) editconst Vector	Origin;
 var(Orientation)	Coords	Orient;
 /**
  *	This is a very long, long, long comment. To make it longer:
@@ -170,8 +170,8 @@ var(Orientation)	Coords	Orient;
 	native					create C++ code for class; this class should be derived from another native class
  */
 var()				string	Description;
-var(Finish)			int		FinishField;
-var(Test)			int		SecondTestField;
+var(Finish) editconst int	FinishField;
+var					int		SecondTestField;
 
 //var					BadType BadField;
 

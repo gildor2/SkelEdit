@@ -56,6 +56,10 @@ public:
 	 *	Set to "true" for complex types
 	 */
 	bool		IsStruc;
+	/**
+	 *	Set to "true" for enumeration types
+	 */
+	bool		IsEnum;
 };
 
 
@@ -67,7 +71,9 @@ class CEnum : public CType
 public:
 	CEnum(const char *AName)
 	:	CType(AName, 1, 1)
-	{}
+	{
+		IsEnum = true;
+	}
 
 	void AddValue(const char *Name);
 

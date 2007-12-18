@@ -18,10 +18,25 @@
             </object>
             <object class="wxMenu">
                 <label>&amp;View</label>
+                <object class="wxMenuItem" name="ID_MNU_WIREFRAME">
+                    <label>Show wireframe</label>
+                    <checkable>1</checkable>
+                </object>
+                <object class="separator">
+                </object>
                 <object class="wxMenuItem" name="ID_FULLSCREEN">
                     <label>View &amp;Fullscreen\tF11</label>
                     <checkable>1</checkable>
                 </object>
+            </object>
+            <object class="wxMenu">
+                <label>&amp;Mesh</label>
+                <object class="wxMenuItem" name="ID_MESHIMPORT">
+                    <label>Import ...</label>
+                </object>
+            </object>
+            <object class="wxMenu" name="ID_MENU1">
+                <label>Anim&amp;Set</label>
             </object>
             <object class="wxMenu">
                 <label>&amp;Window</label>
@@ -37,10 +52,18 @@
                 </object>
             </object>
         </object>
-        <object class="wxStatusBar" name="ID_STATUSBAR1">
-            <style>wxST_SIZEGRIP|wxNO_BORDER</style>
-            <fields>2</fields>
-            <widths></widths>
+        <object class="wxToolBar" name="ID_TOOLBAR1">
+            <style>wxTB_FLAT|wxTB_HORIZONTAL</style>
+            <bitmapsize>24,24</bitmapsize>
+            <object class="tool" name="ID_BTN_WIREFRAME">
+                <bitmap>wireframe.png</bitmap>
+                <tooltip>Show wireframe</tooltip>
+                <toggle>1</toggle>
+            </object>
+            <object class="separator">
+            </object>
+            <object class="wxChoice" name="ID_CHOICE1">
+            </object>
         </object>
         <object class="wxSplitterWindow" name="ID_MAINSPLITTER">
             <size>100,100</size>
@@ -60,18 +83,41 @@
                         <orient>wxVERTICAL</orient>
                         <object class="sizeritem">
                             <flag>wxGROW|wxALL</flag>
-                            <border>5</border>
-                            <object class="wxStaticText" name="wxID_STATIC">
-                                <font>
-                                    <size>8</size>
-                                    <family>swiss</family>
-                                    <weight>bold</weight>
-                                    <face>Tahoma</face>
-                                </font>
-                                <style>wxALIGN_CENTRE</style>
-                                <fg>#FFFFFF</fg>
-                                <bg>#000000</bg>
-                                <label>Browser</label>
+                            <border>0</border>
+                            <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxBOTTOM</flag>
+                                    <border>5</border>
+                                    <option>1</option>
+                                    <object class="wxStaticText" name="wxID_STATIC">
+                                        <font>
+                                            <size>8</size>
+                                            <family>swiss</family>
+                                            <weight>bold</weight>
+                                            <face>Tahoma</face>
+                                        </font>
+                                        <style>wxALIGN_CENTRE</style>
+                                        <fg>#FFFFFF</fg>
+                                        <bg>#000000</bg>
+                                        <label>Browser</label>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
+                                    <border>5</border>
+                                    <object class="wxStaticText" name="ID_CLOSE_TOP">
+                                        <font>
+                                            <size>8</size>
+                                            <family>swiss</family>
+                                            <weight>bold</weight>
+                                            <face>Tahoma</face>
+                                        </font>
+                                        <fg>#FFFFFF</fg>
+                                        <bg>#000000</bg>
+                                        <label> X </label>
+                                    </object>
+                                </object>
                             </object>
                         </object>
                         <object class="sizeritem">
@@ -85,7 +131,7 @@
                                     <object class="wxPanel" name="ID_PANEL1">
                                         <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
                                         <object class="wxFlexGridSizer">
-                                            <cols>1</cols>
+                                            <cols>2</cols>
                                             <rows>2</rows>
                                             <vgap>0</vgap>
                                             <hgap>0</hgap>
@@ -97,11 +143,24 @@
                                                     <label>Skeletal Mesh</label>
                                                 </object>
                                             </object>
+                                            <object class="spacer">
+                                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                <border>5</border>
+                                                <size>5,5</size>
+                                            </object>
                                             <object class="sizeritem">
-                                                <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxBOTTOM</flag>
                                                 <border>5</border>
                                                 <option>1</option>
                                                 <object class="wxTextCtrl" name="ID_TEXTCTRL1">
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxRIGHT|wxTOP|wxBOTTOM</flag>
+                                                <border>5</border>
+                                                <object class="wxButton" name="ID_OPENMESH">
+                                                    <size>20,-1</size>
+                                                    <label>...</label>
                                                 </object>
                                             </object>
                                         </object>
@@ -147,18 +206,41 @@
                         <orient>wxVERTICAL</orient>
                         <object class="sizeritem">
                             <flag>wxGROW|wxALL</flag>
-                            <border>5</border>
-                            <object class="wxStaticText" name="wxID_STATIC">
-                                <font>
-                                    <size>8</size>
-                                    <family>swiss</family>
-                                    <weight>bold</weight>
-                                    <face>Tahoma</face>
-                                </font>
-                                <style>wxALIGN_CENTRE</style>
-                                <fg>#FFFFFF</fg>
-                                <bg>#000000</bg>
-                                <label>Properties</label>
+                            <border>0</border>
+                            <object class="wxBoxSizer">
+                                <orient>wxHORIZONTAL</orient>
+                                <object class="sizeritem">
+                                    <flag>wxGROW|wxLEFT|wxTOP|wxBOTTOM</flag>
+                                    <border>5</border>
+                                    <option>1</option>
+                                    <object class="wxStaticText" name="wxID_STATIC">
+                                        <font>
+                                            <size>8</size>
+                                            <family>swiss</family>
+                                            <weight>bold</weight>
+                                            <face>Tahoma</face>
+                                        </font>
+                                        <style>wxALIGN_CENTRE</style>
+                                        <fg>#FFFFFF</fg>
+                                        <bg>#000000</bg>
+                                        <label>Properties</label>
+                                    </object>
+                                </object>
+                                <object class="sizeritem">
+                                    <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
+                                    <border>5</border>
+                                    <object class="wxStaticText" name="ID_CLOSE_BOTTOM">
+                                        <font>
+                                            <size>8</size>
+                                            <family>swiss</family>
+                                            <weight>bold</weight>
+                                            <face>Tahoma</face>
+                                        </font>
+                                        <fg>#FFFFFF</fg>
+                                        <bg>#000000</bg>
+                                        <label> X </label>
+                                    </object>
+                                </object>
                             </object>
                         </object>
                         <object class="sizeritem">
@@ -177,6 +259,11 @@
                 <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
                 <bg>#400000</bg>
             </object>
+        </object>
+        <object class="wxStatusBar" name="ID_STATUSBAR1">
+            <style>wxST_SIZEGRIP|wxNO_BORDER</style>
+            <fields>2</fields>
+            <widths></widths>
         </object>
     </object>
 </resource>
