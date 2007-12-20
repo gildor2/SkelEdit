@@ -1,3 +1,7 @@
+#ifndef __FILEREADERSTDIO_H__
+#define __FILEREADERSTDIO_H__
+
+
 class CFileReader : public CArchive
 {
 public:
@@ -76,3 +80,6 @@ protected:
 			appError("Unable to serialize data");
 	}
 };
+
+
+#endif // __FILEREADERSTDIO_H__

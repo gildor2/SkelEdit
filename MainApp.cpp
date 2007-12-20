@@ -13,11 +13,17 @@
 #include "FileReaderStdio.h"
 #include "Import.h"
 
+#include "SkelMeshInstance.h"
+
 #include "PropEdit.h"
 
 
 #define CLEAR_COLOR		0.2, 0.3, 0.2, 0
 #define TYPEINFO_FILE	"uc/typeinfo.bin"
+
+//!!!!!!
+static CSkeletalMesh		Mesh;
+static CSkelMeshInstance	*MeshInst;
 
 
 /*!!---------------------------------------------------------------------------
@@ -95,8 +101,13 @@ void DumpStruc(FILE *f, CStruct *S, int indent = 0)
 class GLCanvas : public wxGLCanvas
 {
 public:
+	bool				mShowWireframe;
+	bool				mShowSkeleton;
+
 	GLCanvas(wxWindow *parent)
 	:	wxGLCanvas(parent, wxID_ANY, NULL, wxDefaultPosition, wxSize(300, 300), wxSUNKEN_BORDER)
+	,	mShowWireframe(false)
+	,	mShowSkeleton(false)
 	{
 		mContext = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
 		SetCurrent(*mContext);
@@ -139,11 +150,19 @@ protected:
 		glEnd();
 		glColor3f(1, 1, 1);
 
-		ShowMesh();			//!!!! testing !!!!
+		//!! should change this !!
+		if (MeshInst)
+		{
+			MeshInst->UpdateAnimation(0);
+			MeshInst->DrawMesh(mShowWireframe);
+			if (mShowSkeleton)
+				MeshInst->DrawSkeleton();
+		}
 
 		GL::Set2Dmode();
 		static int frame = 0;
-		GL::textf("Frame: "S_GREEN"%d\n", frame++);	//!!
+		DrawTextRight("Frame: "S_GREEN"%d\n", frame++);	//!!
+		FlushTexts();
 
 		// finish frame
 		glFinish();			//????
@@ -239,14 +258,12 @@ private:
 	int					mMainSplitterPos;
 	GLCanvas			*mCanvas;
 	WPropEdit			*mMeshPropEdit;
-	bool				mShowWireframe;
 
 public:
 	/**
 	 *	Constructor
 	 */
 	MyFrame(const wxString &title)
-	:	mShowWireframe(false)
 	{
 		guard(MyFrame::MyFrame);
 
@@ -388,7 +405,7 @@ protected:
 #if 0
 		FILE *f = fopen("test.log", "a");
 		fprintf(f, "\n\n---------\n\n");
-		DumpStruc(f, (CStruct*)FindType("Test"));
+		DumpStruc(f, (CStruct*)FindType("SkeletalMesh"));
 		fclose(f);
 #endif
 	}
@@ -403,10 +420,23 @@ protected:
 		wxFileDialog dlg(this, "Import mesh from file ...", "", "",
 			"ActorX mesh files (*.psk)|*.psk",
 			wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-		if (dlg.ShowModal())
+		if (dlg.ShowModal() == wxID_OK)
 		{
-			CFileReader Ar(dlg.GetPath().c_str());	// note: will throw appError when failed
-			ImportPsk(Ar);
+			const char *filename = dlg.GetPath().c_str();
+			appSetNotifyHeader("Importing mesh from %s", filename);
+			CFileReader Ar(filename);	// note: will throw appError when failed
+			ImportPsk(Ar, Mesh);
+
+			if (MeshInst)
+				delete MeshInst;
+			MeshInst = new CSkelMeshInstance;
+			MeshInst->SetMesh(&Mesh);
+
+			//???
+			//!! should get typeinfo from CObject automatically
+			mMeshPropEdit->AttachObject(&Mesh, (CStruct*)FindType("SkeletalMesh"));
+
+			appSetNotifyHeader("");
 		}
 
 		unguard;
@@ -418,12 +448,10 @@ protected:
 	void SyncToggles(const char *name, bool value)
 	{
 		char buf[256];
-		// set menu state
-		appSprintf(ARRAY_ARG(buf), "ID_MNU_%s", name);
-		GetMenuBar()->FindItem(XRCID(buf))->Check(value);
-		// set button state
-		appSprintf(ARRAY_ARG(buf), "ID_BTN_%s", name);
-		GetToolBar()->ToggleTool(XRCID(buf), value);
+		appSprintf(ARRAY_ARG(buf), "ID_%s", name);
+		int id = XRCID(buf);
+		GetMenuBar()->FindItem(id)->Check(value);
+		GetToolBar()->ToggleTool(id, value);
 	}
 
 #define HANDLE_TOGGLE(name, var)			\
@@ -434,11 +462,11 @@ protected:
 	}
 
 #define HOOK_TOGGLE(name)					\
-	EVT_MENU(XRCID("ID_MNU_"#name), MyFrame::On_##name) \
-	EVT_MENU(XRCID("ID_BTN_"#name), MyFrame::On_##name)
+	EVT_MENU(XRCID("ID_"#name), MyFrame::On_##name)
 
 	// togglers ...
-	HANDLE_TOGGLE(WIREFRAME, mShowWireframe)
+	HANDLE_TOGGLE(WIREFRAME, mCanvas->mShowWireframe)
+	HANDLE_TOGGLE(SKELETON,  mCanvas->mShowSkeleton )
 
 private:
 	DECLARE_EVENT_TABLE()
@@ -453,6 +481,7 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
 	EVT_MENU(XRCID("ID_MENUTEST"),       MyFrame::OnMenuTest  )	//???
 	EVT_MENU(XRCID("ID_MESHIMPORT"),     MyFrame::OnImportMesh)
 	HOOK_TOGGLE(WIREFRAME)
+	HOOK_TOGGLE(SKELETON)
 END_EVENT_TABLE()
 
 

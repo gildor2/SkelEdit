@@ -1,5 +1,6 @@
 #include "Core.h"
 #include "GlViewport.h"
+#include "TextContainer.h"
 
 // font
 #include "GlFont.h"
@@ -141,7 +142,7 @@ namespace GL
 		delete pic;
 	}
 
-	void text(const char *text)
+	void DrawChar(char c, int color, int textX, int textY)
 	{
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, FONT_TEX_NUM);
@@ -150,8 +151,7 @@ namespace GL
 		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc(GL_GREATER, 0.5);
 
-		int color = 7;
-		static float colorTable[][3] = {
+		static const float colorTable[][3] = {
 			{0, 0, 0},
 			{1, 0, 0},
 			{0, 1, 0},
@@ -163,6 +163,42 @@ namespace GL
 		};
 
 		glBegin(GL_QUADS);
+
+		c -= FONT_FIRST_CHAR;
+
+		int x1 = textX;
+		int y1 = textY;
+		int x2 = textX + CHAR_WIDTH;
+		int y2 = textY + CHAR_HEIGHT;
+		int line = c / CHARS_PER_LINE;
+		int col  = c - line * CHARS_PER_LINE;
+		float s0 = (col      * CHAR_WIDTH)  / (float)TEX_WIDTH;
+		float s1 = ((col+1)  * CHAR_WIDTH)  / (float)TEX_WIDTH;
+		float t0 = (line     * CHAR_HEIGHT) / (float)TEX_HEIGHT;
+		float t1 = ((line+1) * CHAR_HEIGHT) / (float)TEX_HEIGHT;
+
+		for (int s = 1; s >= 0; s--)
+		{
+			if (s)
+				glColor3f(0, 0, 0);
+			else
+				glColor3fv(colorTable[color]);
+			glTexCoord2f(s0, t0);
+			glVertex3f(x1+s, y1+s, 0);
+			glTexCoord2f(s1, t0);
+			glVertex3f(x2+s, y1+s, 0);
+			glTexCoord2f(s1, t1);
+			glVertex3f(x2+s, y2+s, 0);
+			glTexCoord2f(s0, t1);
+			glVertex3f(x1+s, y2+s, 0);
+		}
+
+		glEnd();
+	}
+
+	void text(const char *text)
+	{
+		int color = 7;
 
 		while (char c = *text++)
 		{
@@ -182,46 +218,22 @@ namespace GL
 					continue;
 				}
 			}
-			c -= FONT_FIRST_CHAR;
-			int x1 = textX;
-			int y1 = textY;
-			int x2 = textX + CHAR_WIDTH;
-			int y2 = textY + CHAR_HEIGHT;
-			int line = c / CHARS_PER_LINE;
-			int col  = c - line * CHARS_PER_LINE;
-			float s0 = (col      * CHAR_WIDTH)  / (float)TEX_WIDTH;
-			float s1 = ((col+1)  * CHAR_WIDTH)  / (float)TEX_WIDTH;
-			float t0 = (line     * CHAR_HEIGHT) / (float)TEX_HEIGHT;
-			float t1 = ((line+1) * CHAR_HEIGHT) / (float)TEX_HEIGHT;
-
+			DrawChar(c, color, textX, textY);
 			textX += CHAR_WIDTH;
-
-			for (int s = 1; s >= 0; s--)
-			{
-				if (s)
-					glColor3f(0, 0, 0);
-				else
-					glColor3fv(colorTable[color]);
-				glTexCoord2f(s0, t0);
-				glVertex3f(x1+s, y1+s, 0);
-				glTexCoord2f(s1, t0);
-				glVertex3f(x2+s, y1+s, 0);
-				glTexCoord2f(s1, t1);
-				glVertex3f(x2+s, y2+s, 0);
-				glTexCoord2f(s0, t1);
-				glVertex3f(x1+s, y2+s, 0);
-			}
 		}
-		glEnd();
 	}
+
+#define FORMAT_BUF(fmt,buf)		\
+	va_list	argptr;				\
+	va_start(argptr, fmt);		\
+	char msg[4096];				\
+	vsnprintf(ARRAY_ARG(buf), fmt, argptr); \
+	va_end(argptr);
+
 
 	void textf(const char *fmt, ...)
 	{
-		va_list	argptr;
-		va_start(argptr, fmt);
-		char msg[4096];
-		vsnprintf(ARRAY_ARG(msg), fmt, argptr);
-		va_end(argptr);
+		FORMAT_BUF(fmt, msg);
 		text(msg);
 	}
 
@@ -386,55 +398,142 @@ namespace GL
 #endif
 #undef m
 	}
+
 } // end of GL namespace
 
 
-//-----------------------------------------------------------------------------
-// Hook functions
-//-----------------------------------------------------------------------------
-/*??
-static void Display()
+/*-----------------------------------------------------------------------------
+	Static (change name?) text output
+-----------------------------------------------------------------------------*/
+
+#define TOP_TEXT_POS	CHAR_HEIGHT
+#define LEFT_BORDER		CHAR_WIDTH
+#define RIGHT_BORDER	CHAR_WIDTH
+
+
+struct CRText : public CTextRec
 {
-	// set default text position
-	glRasterPos2i(20, 20);
-	// clear screen buffer
-	glClearColor(CLEAR_COLOR);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	short	x, y;
+};
 
-	// 3D drawings
-	GL::BuildMatrices();
-	GL::Set3Dmode();
+static TTextContainer<CRText, 65536> Text;
 
-	// enable lighting
-	static const float lightPos[4] = {100, 200, 100, 0};
-	glEnable(GL_COLOR_MATERIAL);
-	glEnable(GL_LIGHT0);
-//	glEnable(GL_LIGHTING);
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+static int nextLeft_y  = TOP_TEXT_POS;
+static int nextRight_y = TOP_TEXT_POS;
 
-	// draw scene
-	AppDrawFrame();
 
-	// disable lighting
-	glColor3f(1, 1, 1);
-	glDisable(GL_LIGHTING);
-	glDisable(GL_LIGHT0);
+void ClearTexts()
+{
+	nextLeft_y = nextRight_y = TOP_TEXT_POS;
+	Text.Clear();
+}
 
-	// 2D drawings
-	GL::Set2Dmode();
 
-	// display help when needed
-	if (isHelpVisible)
+static void GetTextExtents(const char *s, int &width, int &height)
+{
+	int x = 0, w = 0;
+	int h = CHAR_HEIGHT;
+	while (char c = *s++)
 	{
-		GL::text(S_RED"Help:\n-----\n"S_WHITE
-				 "Esc         exit\n"
-				 "H           toggle help\n"
-				 "LeftMouse   rotate view\n"
-				 "RightMouse  move view\n"
-				 "R           reset view\n");
+		if (c == COLOR_ESCAPE)
+		{
+			if (*s)
+				s++;
+			continue;
+		}
+		if (c == '\n')
+		{
+			if (x > w) w = x;
+			x = 0;
+			h += CHAR_HEIGHT;
+			continue;
+		}
+		x += CHAR_WIDTH;
 	}
-	AppDisplayTexts(isHelpVisible);
+	width = max(x, w);
+	height = h;
+}
 
-	SDL_GL_SwapBuffers();
+
+static void DrawText(const CRText *rec)
+{
+	int y = rec->y;
+	const char *text = rec->text;
+
+	int color = 7;
+	while (true)
+	{
+		const char *s = strchr(text, '\n');
+		int len = s ? s - text : strlen(text);
+
+		int x = rec->x;
+		for (int i = 0; i < len; i++)
+		{
+			char c = text[i];
+			if (c == COLOR_ESCAPE)
+			{
+				char c2 = text[i+1];
+				if (c2 >= '0' && c2 <= '7')
+				{
+					color = c2 - '0';
+					i++;
+					continue;
+				}
+			}
+			GL::DrawChar(c, color, x, y);
+			x += CHAR_WIDTH;
+		}
+		if (!s) return;							// all done
+
+		y += CHAR_HEIGHT;
+		text = s + 1;
+	}
+}
+
+
+void FlushTexts()
+{
+	Text.Enumerate(DrawText);
+	nextLeft_y = nextRight_y = TOP_TEXT_POS;
+	ClearTexts();
+}
+
+
+void DrawTextPos(int x, int y, const char *text)
+{
+	CRText *rec = Text.Add(text);
+	if (!rec) return;
+	rec->x = x;
+	rec->y = y;
+}
+
+
+void DrawTextLeft(const char *text, ...)
+{
+	int w, h;
+	if (nextLeft_y >= GL::height) return;	// out of screen
+	FORMAT_BUF(text, msg);
+	GetTextExtents(msg, w, h);
+	DrawTextPos(LEFT_BORDER, nextLeft_y, msg);
+	nextLeft_y += h;
+}
+
+
+void DrawTextRight(const char *text, ...)
+{
+	int w, h;
+	if (nextRight_y >= GL::height) return;	// out of screen
+	FORMAT_BUF(text, msg);
+	GetTextExtents(msg, w, h);
+	DrawTextPos(GL::width - RIGHT_BORDER - w, nextRight_y, msg);
+	nextRight_y += h;
+}
+
+/*
+void DrawText3D(const CVec3 &pos, const char *text, unsigned rgba)
+{
+	int coords[2];
+	if (!ProjectToScreen(pos, coords)) return;
+	DrawTextPos(coords[0], coords[1], text, rgba);
 }
 */

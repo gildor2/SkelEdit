@@ -196,3 +196,9 @@ CArchive& operator<<(CArchive &Ar, CCompactIndex &I)
 	}
 	return Ar;
 }
+
+void SerializeChars(CArchive &Ar, char *buf, int length)
+{
+	for (int i = 0; i < length; i++)
+		Ar << *buf++;
+}

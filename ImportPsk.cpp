@@ -1,134 +1,263 @@
 #include "Core.h"
+#include "Import.h"
+#include "ImportPsk.h"
 
 
-struct VChunkHeader
+/*-----------------------------------------------------------------------------
+	Sorting bones by hierarchy
+-----------------------------------------------------------------------------*/
+
+#define SORT_BONES		1		//!!! REMOVE
+
+static const CMeshBone* bonesToSort;
+
+static int SortBones(const int *_B1, const int *_B2)
 {
-	char		ChunkID[20];
-	int			TypeFlag;
-	int			DataSize;
-	int			DataCount;
+	int B[2], i;
+	B[0] = *_B1;
+	B[1] = *_B2;
 
-	friend CArchive& operator<<(CArchive &Ar, VChunkHeader &H)
+	int BoneTree[MAX_MESH_BONES][2];
+	int BoneLeaf[2];
+
+//	appNotify("compare %d and %d", B[0], B[1]);
+	// get current bones chain
+	for (i = 0; i < 2; i++)
 	{
-		for (int i = 0; i < 20; i++)
-			Ar << H.ChunkID[i];
-		return Ar << H.TypeFlag << H.DataSize << H.DataCount;
+//		appNotify("  tree for %d", B[i]);
+		int BoneIndex;
+		const CMeshBone *Bone;
+		int Leaf = 0;
+		for (BoneIndex = B[i], Bone = &bonesToSort[BoneIndex];				// current current bone
+			 BoneIndex;														// until not root
+			 BoneIndex = Bone->ParentIndex, Bone = &bonesToSort[BoneIndex])	// get parent bone
+		{
+//			appNotify("    %d", BoneIndex);
+			BoneTree[Leaf++][i] = BoneIndex;
+			if (Leaf >= MAX_MESH_BONES)
+				appError("Recursion in skeleton hierarchy found");
+		}
+		BoneLeaf[i] = Leaf;
 	}
-};
-
-
-struct VVertex
-{
-	int			PointIndex;				// short, padded to int
-	float		U, V;
-	byte		MatIndex;
-	byte		Reserved;
-	short		Pad;					// not used
-
-	friend CArchive& operator<<(CArchive &Ar, VVertex &V)
+	// compare chains from root node until branches differs
+	int depth = min(BoneLeaf[0], BoneLeaf[1]);
+	assert(depth);
+	int cmp;
+	for (i = 1; i <= depth; i++)
 	{
-		return Ar << V.PointIndex << V.U << V.V << V.MatIndex << V.Reserved << V.Pad;
+		int bone0 = BoneTree[BoneLeaf[0] - i][0];
+		int bone1 = BoneTree[BoneLeaf[1] - i][1];
+//		appNotify("(depth %d/%d -- cmp %d and %d)", i, depth, bone0, bone1);
+		cmp = bone0 - bone1;
+		if (cmp) break;
 	}
-};
-
-
-struct VTriangle
-{
-	word		WedgeIndex[3];			// Point to three vertices in the vertex list.
-	byte		MatIndex;				// Materials can be anything.
-	byte		AuxMatIndex;			// Second material (unused).
-	unsigned	SmoothingGroups;		// 32-bit flag for smoothing groups.
-
-	friend CArchive& operator<<(CArchive &Ar, VTriangle &T)
+	if (!cmp)
 	{
-		Ar << T.WedgeIndex[0] << T.WedgeIndex[1] << T.WedgeIndex[2];
-		Ar << T.MatIndex << T.AuxMatIndex << T.SmoothingGroups;
-		return Ar;
+		// one of bones is parent of another - sort by depth
+//		appNotify("(one node is parent of other)");
+		cmp = BoneLeaf[0] - BoneLeaf[1];
 	}
-};
+//	appNotify("cmp = %d", cmp);
+	return cmp;
+}
 
 
-#define LOAD_CHUNK(var, name)	\
-	VChunkHeader var;			\
-	Ar << var;					\
-	if (strcmp(var.ChunkID, name) != 0) \
-		appError("LoadChunk: expecting header \""name"\", but found \"%s\"", var.ChunkID);
+/*-----------------------------------------------------------------------------
+	Importing PSK mesh
+-----------------------------------------------------------------------------*/
 
-//!!! REMOVE !!!
-static int	 		g_numVerts, g_numWedges, g_numTris;
-static CVec3		*g_verts;
-static VVertex		*g_wedges;
-static VTriangle	*g_tris;
-
-void ImportPsk(CArchive &Ar)
+void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 {
 	guard(ImportPsk);
 	int i;
 
+	/*
+	 *	Load PSK file
+	 */
+
+	TArray<CVec3>		Verts;
+	TArray<VVertex>		Wedges;
+	TArray<VTriangle>	Tris;
+	TArray<VMaterial>	Materials;
+	TArray<VBone>		Bones;
+	TArray<VRawBoneInfluence> Infs;
+
 	// load primary header
 	LOAD_CHUNK(MainHdr, "ACTRHEAD");
 	if (MainHdr.TypeFlag != 1999801)
-		appError("Found PSK version %d", MainHdr.TypeFlag);
+		appNotify("WARNING: found PSK version %d", MainHdr.TypeFlag);
 
 	// load points
 	LOAD_CHUNK(PtsHdr, "PNTS0000");
 	int numVerts = PtsHdr.DataCount;
-	g_numVerts = numVerts;
-	CVec3 *Verts = new CVec3[numVerts];
-	g_verts = Verts;
+	Verts.Empty(numVerts);
+	Verts.Add(numVerts);
 	for (i = 0; i < numVerts; i++)
 		Ar << Verts[i];
 
 	// load wedges
 	LOAD_CHUNK(WedgHdr, "VTXW0000");
 	int numWedges = WedgHdr.DataCount;
-	g_numWedges = numWedges;
-	VVertex *Wedges = new VVertex[numWedges];
-	g_wedges = Wedges;
+	Wedges.Empty(numWedges);
+	Wedges.Add(numWedges);
 	for (i = 0; i < numWedges; i++)
 		Ar << Wedges[i];
 
 	LOAD_CHUNK(FacesHdr, "FACE0000");
 	int numTris = FacesHdr.DataCount;
-	g_numTris = numTris;
-	VTriangle *Tris = new VTriangle[numTris];
-	g_tris = Tris;
+	Tris.Empty(numTris);
+	Tris.Add(numTris);
 	for (i = 0; i < numTris; i++)
 		Ar << Tris[i];
 
 	LOAD_CHUNK(MatrHdr, "MATT0000");
+	int numMaterials = MatrHdr.DataCount;
+	Materials.Empty(numMaterials);
+	Materials.Add(numMaterials);
+	for (i = 0; i < numMaterials; i++)
+		Ar << Materials[i];
 
-//	appNotify("%d %d %d", PtsHdr.TypeFlag, PtsHdr.DataSize, PtsHdr.DataCount);
+	LOAD_CHUNK(BoneHdr, "REFSKELT");
+	int numBones = BoneHdr.DataCount;
+	Bones.Empty(numBones);
+	Bones.Add(numBones);
+	for (i = 0; i < numBones; i++)
+		Ar << Bones[i];
 
+	LOAD_CHUNK(InfHdr, "RAWWEIGHTS");
+	int numInfs = InfHdr.DataCount;
+	Infs.Empty(numInfs);
+	Infs.Add(numInfs);
+	for (i = 0; i < numInfs; i++)
+		Ar << Infs[i];
+
+	if (!Ar.IsEof())
+		appNotify("WARNING: extra bytes in source file");
+
+	/*
+	 *	Import data into Mesh
+	 */
+
+	// get lod model
+	//?? it should be possible to import mesh into specific LOD index
+	Mesh.Lods.Empty(1);
+	Mesh.Lods.Add();
+	CSkeletalMeshLod &Lod = Mesh.Lods[0];
+
+	// copy vertex information
+	guard(ImportVerts);
+	Lod.Points.Empty(numWedges);
+	Lod.Points.Add(numWedges);
+	for (i = 0; i < numWedges; i++)
+	{
+		CMeshPoint &P = Lod.Points[i];
+		const VVertex &W = Wedges[i];
+		P.Point = Verts[W.PointIndex];
+		P.U     = W.U;
+		P.V     = W.V;
+	}
+	unguard;
+
+	// check material usage
+	assert(numMaterials <= MAX_MESH_MATERIALS);
+	int matUsed[MAX_MESH_MATERIALS];	// counts of triangles using this material
+	memset(matUsed, 0, sizeof(matUsed));
+	for (i = 0; i < numTris; i++)
+		matUsed[Tris[i].MatIndex]++;
+
+	// create material index remap
+	int matRemap[MAX_MESH_MATERIALS];	//!! use for materials array too !!
+	int numUsedMaterials = 0;
+	guard(RemapMaterials);
+	for (i = 0; i < numMaterials; i++)
+	{
+		if (!matUsed[i])
+		{
+			appNotify("Unused material found: %s", Materials[i].MaterialName);
+			continue;
+		}
+		matRemap[i] = numUsedMaterials++;
+	}
+	unguard;
+
+	// create sections for materials
+	guard(BuildSections);
+
+	Lod.Sections.Empty(numUsedMaterials);
+	Lod.Sections.Add(numUsedMaterials);
+	Lod.Indices.Empty(numTris * 3);
+
+	int section = 0;
+	for (int Mat = 0; Mat < numMaterials; Mat++)
+	{
+		if (!matUsed[Mat]) continue;	// no tris for this material
+		int secTris = 0;
+		// prepare empty section
+		CMeshSection &Section = Lod.Sections[section++];
+		Section.MaterialIndex = matRemap[Mat];
+		Section.FirstIndex    = Lod.Indices.Num();
+		Section.NumIndices    = 0;
+		// find section triangles
+		for (int t = 0; t < numTris; t++)
+		{
+			const VTriangle &Face = Tris[t];
+			if (Face.MatIndex != Mat)
+				continue;				// different material
+			// add indices for this triangle
+			// NOTE: PSK has reverse order of points in triangle
+			Lod.Indices.AddItem(Face.WedgeIndex[0]);
+			Lod.Indices.AddItem(Face.WedgeIndex[2]);
+			Lod.Indices.AddItem(Face.WedgeIndex[1]);
+			Section.NumIndices += 3;
+
+			secTris++;
+		}
+		assert(secTris == matUsed[Mat]);
+	}
+	assert(section == numUsedMaterials);
+	if (Lod.Indices.Num() != numTris * 3)
+		appNotify("WARNING: indices array size incorrect: %d instead of %d", Lod.Indices.Num(), numTris * 3);
+	unguard;
+
+	// import skeleton
+	guard(ImportBones);
+	Mesh.Skeleton.Empty(numBones);
+	Mesh.Skeleton.Add(numBones);
+	for (i = 0; i < numBones; i++)
+	{
+		CMeshBone   &B  = Mesh.Skeleton[i];
+		const VBone &SB = Bones[i];
+		appStrncpyz(B.Name, SB.Name, ARRAY_COUNT(B.Name));
+		// trim trailing spaces
+		for (int j = strlen(B.Name)-1; j >= 0; j--)
+		{
+			if (B.Name[j] == ' ')
+				B.Name[j] = 0;
+			else
+				break;
+		}
+		B.Position    = SB.BonePos.Position;
+		B.Orientation = SB.BonePos.Orientation;
+		B.ParentIndex = SB.ParentIndex;
+	}
+	// sort bones by hierarchy
+	//!! should remap weights
+	int sortedBones[MAX_MESH_BONES];
+	for (i = 0; i < numBones; i++)
+		sortedBones[i] = i;
+	bonesToSort = &Mesh.Skeleton[0];
+	QSort(sortedBones+1, numBones - 1, SortBones);
+	for (i = 0; i < numBones; i++)
+		if (sortedBones[i] != i)
+			appError("Found mesh with insorted bones, should sort and remap!");	//!! remap bones/weights
+	unguard;
 
 	unguard;
 }
 
 
-//!!!! TESTING !!!!
-#include "GlViewport.h"
-
-void ShowMesh()
-{
-	for (int i = 0; i < g_numTris; i++)
-	{
-		const VTriangle &Face = g_tris[i];
-
-		// SetMaterial()
-		int color = Face.MatIndex + 1;
-		if (color > 7) color = 7;
-#define C(n)	( ((color >> n) & 1) * 0.5f + 0.3f )
-		glColor3f(C(0), C(1), C(2));
-#undef C
-
-		// draw single triangle
-		glBegin(GL_TRIANGLES);
-		for (int j = 0; j < 3; j++)
-		{
-			const VVertex &W = g_wedges[Face.WedgeIndex[j]];
-//			glTexCoord2f(W.U, W.V);
-			glVertex3fv(&g_verts[W.PointIndex][0]);
-		}
-		glEnd();
-	}
-}
+//!! AFTER LOADING (COMMON FOR ALL FORMATS):
+//!! - compute normals (if none) -- add ability to recompute normals from menu
+//!! - normalize weights (check USkeletalMeshInstance code)
+//!! - optimize mesh for vertex cache; may be, not needed, if it is done in renderer
+//!! - resort bones by hierarchy (check USkeletalMeshInstance code) -- will require to remap influences

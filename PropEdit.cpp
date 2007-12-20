@@ -336,15 +336,44 @@ WPropEdit::WPropEdit(wxWindow *parent, wxWindowID id, const wxPoint &pos,
 	m_ContOnlyColIndex = PROP_UNHIDE(Prop, m_bgColIndex);	// container property colour
 	// remove dummy property
 	Clear();
+
+	// prepare event handlers
+	Connect(GetId(), wxEVT_PG_CHANGED,
+		(wxObjectEventFunction) (wxEventFunction) (wxPropertyGridEventFunction)
+		&WPropEdit::OnPropertyChange);
+}
+
+
+void WPropEdit::OnPropertyChange(wxPropertyGridEvent &event)
+{
+	wxPGProperty *property = event.GetProperty();
+	if (!property)
+		return;
+
+	if (m_EditObject)
+		m_EditObject->UpdateProperties();
 }
 
 
 void WPropEdit::AttachObject(CStruct *Type, void *Data)
 {
+	m_EditObject = NULL;
 	// cleanup grid from previous properties
 	Clear();
 	if (Type && Data)
 		PopulateStruct(NULL, Type, Data);
+	// redraw control
+	Refresh();
+}
+
+
+void WPropEdit::AttachObject(CObject *Object, CStruct *Type)
+{
+	m_EditObject = Object;
+	// cleanup grid from previous properties
+	Clear();
+	assert(Type && Object);
+	PopulateStruct(NULL, Type, Object);
 	// redraw control
 	Refresh();
 }

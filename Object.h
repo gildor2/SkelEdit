@@ -2,6 +2,8 @@
 class CProperty;
 class CObject;
 
+#undef DECLARE_CLASS		// defined in wxWidgets
+#define DECLARE_CLASS(x,y)	//!! MAKE IT !!
 
 /*-----------------------------------------------------------------------------
 	Type serialization consts
@@ -245,6 +247,10 @@ class CObject
 {
 private:
 	CClass		*TypeInfo;
+
+public:
+	virtual void UpdateProperties()
+	{}
 };
 
 

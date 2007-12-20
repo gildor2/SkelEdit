@@ -18,8 +18,12 @@
             </object>
             <object class="wxMenu">
                 <label>&amp;View</label>
-                <object class="wxMenuItem" name="ID_MNU_WIREFRAME">
-                    <label>Show wireframe</label>
+                <object class="wxMenuItem" name="ID_WIREFRAME">
+                    <label>Show &amp;wireframe\tCtrl+W</label>
+                    <checkable>1</checkable>
+                </object>
+                <object class="wxMenuItem" name="ID_SKELETON">
+                    <label>Show &amp;skeleton\tCtrl+S</label>
                     <checkable>1</checkable>
                 </object>
                 <object class="separator">
@@ -55,14 +59,17 @@
         <object class="wxToolBar" name="ID_TOOLBAR1">
             <style>wxTB_FLAT|wxTB_HORIZONTAL</style>
             <bitmapsize>24,24</bitmapsize>
-            <object class="tool" name="ID_BTN_WIREFRAME">
+            <object class="separator">
+            </object>
+            <object class="tool" name="ID_WIREFRAME">
                 <bitmap>wireframe.png</bitmap>
                 <tooltip>Show wireframe</tooltip>
                 <toggle>1</toggle>
             </object>
-            <object class="separator">
-            </object>
-            <object class="wxChoice" name="ID_CHOICE1">
+            <object class="tool" name="ID_SKELETON">
+                <bitmap>skeleton.png</bitmap>
+                <tooltip>Show mesh skeleton</tooltip>
+                <toggle>1</toggle>
             </object>
         </object>
         <object class="wxSplitterWindow" name="ID_MAINSPLITTER">

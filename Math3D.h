@@ -277,6 +277,31 @@ struct CQuat
 		FNegate(z);
 	}
 	void Normalize();
+
+	friend CArchive& operator<<(CArchive &Ar, CQuat &Q)
+	{
+		return Ar << Q.x << Q.y << Q.z << Q.w;
+	}
 };
 
 void Slerp(const CQuat &A, const CQuat &B, float Alpha, CQuat &dst);
+
+
+/*-----------------------------------------------------------------------------
+	Rotator
+-----------------------------------------------------------------------------*/
+
+struct CRotator
+{
+	int		Yaw, Pitch, Roll;
+
+	inline void Set(int _Yaw, int _Pitch, int _Roll)
+	{
+		Yaw = _Yaw; Pitch = _Pitch; Roll = _Roll;
+	}
+
+	friend CArchive& operator<<(CArchive &Ar, CRotator &R)
+	{
+		return Ar << R.Pitch << R.Yaw << R.Roll;
+	}
+};

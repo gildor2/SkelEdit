@@ -31,11 +31,13 @@ sources(MAIN) = {
 	PropEdit.cpp
 !endif
 	ImportPsk.cpp
+	SkelMeshInstance.cpp
 	# core libraries
 	Core.cpp
 	Object.cpp
 	Memory.cpp
 	Math3D.cpp
+	TextContainer.cpp
 	GlViewport.cpp
 }
 

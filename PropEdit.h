@@ -1,3 +1,7 @@
+#ifndef __PROPEDIT_H__
+#define __PROPEDIT_H__
+
+
 class WPropEdit : public wxPropertyGrid
 {
 public:
@@ -12,13 +16,23 @@ public:
 	void PopulateProp(wxPGPropertyWithChildren *Parent, const CProperty *Prop, void *Data, const char *PropName);
 
 	void AttachObject(CStruct *Type, void *Data);
+	void AttachObject(CObject *Object, CStruct *Type);
 	inline void DetachObject()
 	{
-		AttachObject(NULL, NULL);
+		AttachObject(NULL, (void*)NULL);
 	}
 
+	void OnPropertyChange(wxPropertyGridEvent &event);
+
+	/**
+	 *	When set, CObject::UpdateProperties() will be called after property modification
+	 */
+	CObject*	m_EditObject;
 	/**
 	 *	Index of container property colour
 	 */
-	byte	m_ContOnlyColIndex;
+	byte		m_ContOnlyColIndex;
 };
+
+
+#endif // __PROPEDIT_H__

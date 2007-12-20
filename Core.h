@@ -121,6 +121,13 @@ typedef unsigned short		word;
 #define S_WHITE			"^7"
 
 
+union color_t
+{
+	byte	c[4];
+	unsigned rgba;
+};
+
+
 void appError(char *fmt, ...);
 
 // log some interesting information
@@ -310,6 +317,7 @@ public:
 //	virtual CArchive& operator<<(UObject *&Obj) = NULL;
 };
 
+void SerializeChars(CArchive &Ar, char *buf, int length);
 
 /*-----------------------------------------------------------------------------
 	TArray template
@@ -325,7 +333,11 @@ public:
 	{}
 	~CArray()
 	{
-		Empty();
+		if (DataPtr)
+			delete[] DataPtr;
+		DataPtr   = NULL;
+		DataCount = 0;
+		MaxCount  = 0;
 	}
 
 	int Num() const
@@ -333,13 +345,18 @@ public:
 		return DataCount;
 	}
 
-	void Empty()
+	void Empty(int count, int elementSize)
 	{
 		if (DataPtr)
 			delete[] DataPtr;
 		DataPtr   = NULL;
 		DataCount = 0;
-		MaxCount  = 0;
+		MaxCount  = count;
+		if (count)
+		{
+			DataPtr = new byte[count * elementSize];
+			memset(DataPtr, 0, count * elementSize);
+		}
 	}
 
 protected:
@@ -413,7 +430,7 @@ public:
 	int Add(int count = 1)
 	{
 		int index = DataCount;
-		CArray::Insert(index, 1, sizeof(T));
+		CArray::Insert(index, count, sizeof(T));
 		return index;
 	}
 
@@ -432,6 +449,11 @@ public:
 		int index = Add();
 		(*this)[index] = item;
 		return index;
+	}
+
+	void Empty(int count = 0)
+	{
+		CArray::Empty(count, sizeof(T));
 	}
 
 /*	// serializer
