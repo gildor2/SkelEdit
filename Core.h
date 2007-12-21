@@ -456,7 +456,7 @@ public:
 		CArray::Empty(count, sizeof(T));
 	}
 
-/*	// serializer
+	// serializer
 	friend CArchive& operator<<(CArchive &Ar, TArray &A)
 	{
 		guard(TArray<<);
@@ -472,7 +472,7 @@ public:
 			Ar << *Ptr++;
 		return Ar;
 		unguard;
-	} */
+	}
 };
 
 

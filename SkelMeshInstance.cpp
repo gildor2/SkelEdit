@@ -10,6 +10,7 @@
 struct CMeshBoneData
 {
 	// static data (computed after mesh loading)
+	//!! MOVE TO CSkeletalMesh
 	int			BoneMap;			// index of bone in animation tracks
 	CCoords		RefCoords;			// coordinates of bone in reference pose
 	CCoords		RefCoordsInv;		// inverse of RefCoordsInv
@@ -55,7 +56,7 @@ void CSkelMeshInstance::ClearSkelAnims()
 }
 
 
-/* Iterate bone (sub)tree and do following:
+/* Iterate bone (sub)tree and do following:zz
  *	- find all direct childs of bone 'Index', check sort order; bones should be
  *	  sorted in hierarchy order (1st child and its children first, other childs next)
  *	  Example of tree:
@@ -130,24 +131,16 @@ void CSkelMeshInstance::SetMesh(CSkeletalMesh *Mesh)
 		// NOTE: assumed, that parent bones goes first
 		assert(B.ParentIndex <= i);
 
-		// find reference bone in animation track
+		// set reference bone in animation track
 		data->BoneMap = -1;
-		if (pAnim)	//?? move code to SetAnim() ?
-		{
-			for (int j = 0; j < pAnim->RefBones.Num(); j++)
-				if (!strcmp(B.Name, pAnim->RefBones[j].Name))
-				{
-					data->BoneMap = j;
-					break;
-				}
-		}
 
+		//!! MOVE TO CSkeletalMesh !!
 		// compute reference bone coords
 		CVec3 BP;
 		CQuat BO;
 		// get default pose
-		BP = (CVec3&)B.Position;
-		BO = (CQuat&)B.Orientation;
+		BP = B.Position;
+		BO = B.Orientation;
 		if (!i) BO.Conjugate();
 
 		CCoords &BC = data->RefCoords;
@@ -158,50 +151,14 @@ void CSkelMeshInstance::SetMesh(CSkeletalMesh *Mesh)
 			BoneData[pMesh->Skeleton[i].ParentIndex].RefCoords.UnTransformCoords(BC, BC);
 		// store inverted transformation too
 		InvertCoords(data->RefCoords, data->RefCoordsInv);
+
 		// initialize skeleton configuration
 		data->Scale = 1.0f;			// default bone scale
 	}
 
-	//!! move following part to mesh importer
-/**	// normalize VertInfluences: sum of all influences may be != 1
-	// (possible situation, see SkaarjAnims/Skaarj2, SkaarjAnims/Skaarj_Skel, XanRobots/XanF02)
-	float *VertSumWeights = new float[NumVerts];	// zeroed
-	int   *VertInfCount   = new int  [NumVerts];	// zeroed
-	// count sum of weights for all verts
-	for (i = 0; i < Mesh->VertInfluences.Num(); i++)
-	{
-		const FVertInfluences &Inf = pMesh->VertInfluences[i];
-		int PointIndex = Inf.PointIndex;
-		assert(PointIndex < NumVerts);
-		VertSumWeights[PointIndex] += Inf.Weight;
-		VertInfCount  [PointIndex]++;
-	}
-#if 0
-	// notify about wrong weights
-	for (i = 0; i < NumVerts; i++)
-	{
-		if (fabs(VertSumWeights[i] - 1.0f) < 0.01f) continue;
-		appNotify("Vert[%d] weight sum=%g (%d weights)", i, VertSumWeights[i], VertInfCount[i]);
-	}
-#endif
-	// normalize weights
-	for (i = 0; i < pMesh->VertInfluences.Num(); i++)
-	{
-		FVertInfluences &Inf = pMesh->VertInfluences[i];
-		int PointIndex = Inf.PointIndex;
-		float sum = VertSumWeights[PointIndex];
-		if (fabs(sum - 1.0f) < 0.01f) continue;
-		assert(sum > 0.01f);	// no division by zero
-		Inf.Weight = Inf.Weight / sum;
-	}
-
-	delete VertSumWeights;
-	delete VertInfCount;
-	*/
-	//!! END OF EDITOR CODE !!
-
 	// check bones tree
 	//!!!! REMOVE THIS CODE
+	//!!!! requires bone subtree size information, should be computed in CSkeletalMesh
 	int treeSizes[MAX_MESH_BONES], depth[MAX_MESH_BONES];
 	int numIndices = 0;
 	CheckBoneTree(pMesh->Skeleton, 0, treeSizes, depth, numIndices, MAX_MESH_BONES);
@@ -256,6 +213,28 @@ void CSkelMeshInstance::SetMesh(CSkeletalMesh *Mesh)
 }
 
 
+void CSkelMeshInstance::SetAnim(CAnimSet *Anim)
+{
+	pAnim = Anim;
+	assert(pMesh);
+	assert(pAnim);
+
+	// prepare animation <-> mesh bone map
+	for (int i = 0; i < pMesh->Skeleton.Num(); i++)
+	{
+		const CMeshBone &B = pMesh->Skeleton[i];
+		BoneData[i].BoneMap = -1;
+		// find reference bone in animation track
+		for (int j = 0; j < pAnim->RefBones.Num(); j++)
+			if (!strcmp(B.Name, pAnim->RefBones[j].Name))
+			{
+				BoneData[i].BoneMap = j;
+				break;
+			}
+	}
+}
+
+
 /*-----------------------------------------------------------------------------
 	Miscellaneous
 -----------------------------------------------------------------------------*/
@@ -305,8 +284,7 @@ void CSkelMeshInstance::SetBoneScale(const char *BoneName, float scale)
 //!! ^^^^^^
 
 
-/**
-static void GetBonePosition(const AnalogTrack &A, float Frame, float NumFrames, bool Loop,
+static void GetBonePosition(const CAnalogTrack &A, float Frame, float NumFrames, bool Loop,
 	CVec3 &DstPos, CQuat &DstQuat)
 {
 
@@ -317,8 +295,8 @@ static void GetBonePosition(const AnalogTrack &A, float Frame, float NumFrames, 
 	// fast case: 1 frame only
 	if (A.KeyTime.Num() == 1)
 	{
-		DstPos  = (CVec3&)A.KeyPos[0];
-		DstQuat = (CQuat&)A.KeyQuat[0];
+		DstPos  = A.KeyPos[0];
+		DstQuat = A.KeyQuat[0];
 		return;
 	}
 
@@ -347,8 +325,8 @@ static void GetBonePosition(const AnalogTrack &A, float Frame, float NumFrames, 
 		if (Frame == CurrKeyTime)
 		{
 			// exact key found
-			DstPos  = (A.KeyPos.Num()  > 1) ? (CVec3&)A.KeyPos[i]  : (CVec3&)A.KeyPos[0];
-			DstQuat = (A.KeyQuat.Num() > 1) ? (CQuat&)A.KeyQuat[i] : (CQuat&)A.KeyQuat[0];
+			DstPos  = (A.KeyPos.Num()  > 1) ? A.KeyPos[i]  : A.KeyPos[0];
+			DstQuat = (A.KeyQuat.Num() > 1) ? A.KeyQuat[i] : A.KeyQuat[0];
 			return;
 		}
 		if (Frame < CurrKeyTime)
@@ -369,8 +347,8 @@ static void GetBonePosition(const AnalogTrack &A, float Frame, float NumFrames, 
 		if (Frame == CurrKeyTime)
 		{
 			// exact key found
-			DstPos  = (A.KeyPos.Num()  > 1) ? (CVec3&)A.KeyPos[i]  : (CVec3&)A.KeyPos[0];
-			DstQuat = (A.KeyQuat.Num() > 1) ? (CQuat&)A.KeyQuat[i] : (CQuat&)A.KeyQuat[0];
+			DstPos  = (A.KeyPos.Num()  > 1) ? A.KeyPos[i]  : A.KeyPos[0];
+			DstQuat = (A.KeyQuat.Num() > 1) ? A.KeyQuat[i] : A.KeyQuat[0];
 			return;
 		}
 		if (Frame < CurrKeyTime)
@@ -416,18 +394,18 @@ static void GetBonePosition(const AnalogTrack &A, float Frame, float NumFrames, 
 
 	// get position
 	if (A.KeyPos.Num() > 1)
-		Lerp((CVec3&)A.KeyPos[X], (CVec3&)A.KeyPos[Y], frac, DstPos);
+		Lerp(A.KeyPos[X], A.KeyPos[Y], frac, DstPos);
 	else
-		DstPos = (CVec3&)A.KeyPos[0];
+		DstPos = A.KeyPos[0];
 	// get orientation
 	if (A.KeyQuat.Num() > 1)
-		Slerp((CQuat&)A.KeyQuat[X], (CQuat&)A.KeyQuat[Y], frac, DstQuat);
+		Slerp(A.KeyQuat[X], A.KeyQuat[Y], frac, DstQuat);
 	else
-		DstQuat = (CQuat&)A.KeyQuat[0];
+		DstQuat = A.KeyQuat[0];
 
 	unguard;
 }
-*/
+
 
 static int BoneUpdateCounts[MAX_MESH_BONES];	//!! remove later
 
@@ -440,23 +418,23 @@ void CSkelMeshInstance::UpdateSkeleton()
 	int Stage;
 	CAnimChan *Chn;
 	memset(BoneUpdateCounts, 0, sizeof(BoneUpdateCounts)); //!! remove later
-DrawTextLeft("ANIM: %d stages", MaxAnimChannel+1);
+DrawTextRight(S_YELLOW"ANIM: %d stages", MaxAnimChannel+1);
 	for (Stage = 0, Chn = Channels; Stage <= MaxAnimChannel; Stage++, Chn++)
 	{
 		if (Stage > 0 && (Chn->AnimIndex1 == ANIM_UNASSIGNED || Chn->BlendAlpha <= 0))
 			continue;
-DrawTextLeft("[%d] anim=%d + %d", Stage, Chn->AnimIndex1, Chn->AnimIndex2);
+DrawTextRight("[%d] anim=%d + %d", Stage, Chn->AnimIndex1, Chn->AnimIndex2);
 
-///		const MotionChunk  *Motion1  = NULL, *Motion2  = NULL;
+		const CMotionChunk *Motion1  = NULL, *Motion2  = NULL;
 		const CMeshAnimSeq *AnimSeq1 = NULL, *AnimSeq2 = NULL;
 		float Time2;
 		if (Chn->AnimIndex1 >= 0)
 		{
-///			Motion1  = &pAnim->Moves   [Chn->AnimIndex1];
+			Motion1  = &pAnim->Motion  [Chn->AnimIndex1];
 			AnimSeq1 = &pAnim->AnimSeqs[Chn->AnimIndex1];
 			if (Chn->AnimIndex2 >= 0 && Chn->SecondaryBlend)
 			{
-///				Motion2  = &pAnim->Moves   [Chn->AnimIndex2];
+				Motion2  = &pAnim->Motion  [Chn->AnimIndex2];
 				AnimSeq2 = &pAnim->AnimSeqs[Chn->AnimIndex2];
 				// compute time for secondary channel; always in sync with primary channel
 				Time2 = Chn->Time / AnimSeq1->NumFrames * AnimSeq2->NumFrames;
@@ -488,13 +466,13 @@ DrawTextLeft("[%d] anim=%d + %d", Stage, Chn->AnimIndex1, Chn->AnimIndex2);
 			CQuat BO;
 			int BoneIndex = data->BoneMap;
 			// compute bone orientation
-/**			if (Motion1 && BoneIndex >= 0)
+			if (Motion1 && BoneIndex >= 0)
 			{
 				// get bone position from track
 				if (!Motion2 || Chn->SecondaryBlend != 1.0f)
 				{
 					BoneUpdateCounts[i]++;		//!! remove later
-					GetBonePosition(Motion1->AnimTracks[BoneIndex], Chn->Time, AnimSeq1->NumFrames,
+					GetBonePosition(Motion1->Tracks[BoneIndex], Chn->Time, AnimSeq1->NumFrames,
 						Chn->Looped, BP, BO);
 				}
 				// blend secondary animation
@@ -503,7 +481,7 @@ DrawTextLeft("[%d] anim=%d + %d", Stage, Chn->AnimIndex1, Chn->AnimIndex2);
 					CVec3 BP2;
 					CQuat BO2;
 					BoneUpdateCounts[i]++;		//!! remove later
-					GetBonePosition(Motion2->AnimTracks[BoneIndex], Time2, AnimSeq2->NumFrames,
+					GetBonePosition(Motion2->Tracks[BoneIndex], Time2, AnimSeq2->NumFrames,
 						Chn->Looped, BP2, BO2);
 					if (Chn->SecondaryBlend == 1.0f)
 					{
@@ -517,12 +495,12 @@ DrawTextLeft("[%d] anim=%d + %d", Stage, Chn->AnimIndex1, Chn->AnimIndex2);
 					}
 				}
 			}
-			else */
+			else
 			{
 				// get default bone position
 				const CMeshBone &B = pMesh->Skeleton[i];
-				BP = (CVec3&)B.Position;
-				BO = (CQuat&)B.Orientation;
+				BP = B.Position;
+				BO = B.Orientation;
 			}
 			if (!i) BO.Conjugate();
 
@@ -653,6 +631,7 @@ void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 			// whole subtree will be skipped in UpdateSkeleton(), so - mark root bone only
 			BoneData[Chn->RootBone].FirstChannel = Stage;
 		}
+		DrawTextRight(S_CYAN"chn[%d] time=%5.2f", Stage, Chn->Time);
 	}
 
 	UpdateSkeleton();
@@ -858,30 +837,43 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe)
 	//?? transform vector (+ normal ?; note: normals requires normalized
 	//?? transformations ?? (or normalization guaranteed by sum(weights)==1?))
 	memset(MeshVerts, 0, sizeof(CVec3) * Lod.Points.Num());
-/**
-	for (i = 0; i < Mesh->VertInfluences.Num(); i++)
+#if 0
+	for (i = 0; i < Lod.Points.Num(); i++)
 	{
+//	for (i = 0; i < Mesh->VertInfluences.Num(); i++)
+//	{
 		const FVertInfluences &Inf  = pMesh->VertInfluences[i];
 		const CMeshBoneData   &data = BoneData[Inf.BoneIndex];
 		int PointIndex = Inf.PointIndex;
-		const CVec3 &Src = (CVec3&)Mesh->Points[PointIndex];
+		const CVec3 &Src = Mesh->Points[PointIndex];
 		CVec3 tmp;
-#if 0
+	#if 0
 		// variant 1: ref pose -> local bone space -> transformed bone to world
 		data.RefCoords.TransformPoint(Src, tmp);
 		data.Coords.UnTransformPoint(tmp, tmp);
-#else
+	#else
 		// variant 2: use prepared transformation (same result, but faster)
 		data.Transform.UnTransformPoint(Src, tmp);
-#endif
+	#endif
 		VectorMA(MeshVerts[PointIndex], Inf.Weight, tmp);
 	}
-*/
-	//!! TEMP CODE, UNTIL INFLUENCES SUPPORTED !!
+#else
 	for (i = 0; i < Lod.Points.Num(); i++)
 	{
-		MeshVerts[i] = Lod.Points[i].Point;
+		CCoords Transform;
+		Transform.Zero();
+		const CMeshPoint &P = Lod.Points[i];
+		for (int j = 0; j < MAX_VERTEX_INFLUENCES; j++)
+		{
+			const CMeshPoint::CWeight &W = P.Influences[j];
+			int BoneIndex = W.BoneIndex;
+			if (BoneIndex == NO_INFLUENCE)
+				break;					// end of list
+			CoordsMA(Transform, W.Weight / 65535.0f, BoneData[BoneIndex].Transform);
+		}
+		Transform.UnTransformPoint(P.Point, MeshVerts[i]);
 	}
+#endif
 
 	// prepare GL
 	glPolygonMode(GL_FRONT_AND_BACK, Wireframe ? GL_LINE : GL_FILL);

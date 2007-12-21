@@ -5,17 +5,35 @@
 #define MAX_BONE_NAME			32
 #define MAX_MESH_MATERIALS		256
 
+#define MAX_VERTEX_INFLUENCES	4
+#define NO_INFLUENCE			-1
+
 
 // wedge structure
 struct CMeshPoint
 {
+	struct CWeight
+	{
+		short		BoneIndex;		// -1 == entry not used
+		word		Weight;			// 0==0.0f, 65535 == 1.0f
+		friend CArchive& operator<<(CArchive &Ar, CWeight &W)
+		{
+			return Ar << W.BoneIndex << W.Weight;
+		}
+	};
+
 	CVec3			Point;
 	CVec3			Normal;
 	float			U, V;
+	CWeight			Influences[MAX_VERTEX_INFLUENCES];	// 1st entry with BoneIndex==NO_INFLUENCE will
+														// mark end of array
 
 	friend CArchive& operator<<(CArchive &Ar, CMeshPoint &P)
 	{
-		return Ar << P.Point << P.Normal << P.U << P.V;
+		Ar << P.Point << P.Normal << P.U << P.V;
+		for (int i = 0; i < MAX_VERTEX_INFLUENCES; i++)
+			Ar << P.Influences[i];
+		return Ar;
 	}
 };
 
@@ -29,7 +47,6 @@ struct CMeshBone
 };
 
 
-//!! USE IT
 struct CMeshSection
 {
 	int				MaterialIndex;
@@ -40,9 +57,6 @@ struct CMeshSection
 
 struct CSkeletalMeshLod
 {
-	//!! indices array
-	//!! influences
-
 	TArray<CMeshSection>	Sections;
 	TArray<CMeshPoint>		Points;
 	TArray<int>				Indices;

@@ -7,6 +7,7 @@
 
 
 void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh);
+void ImportPsa(CArchive &Ar, CAnimSet &Anim);
 
 //!!!!! TESTING !!!!!
 void ShowMesh(const CSkeletalMesh &Mesh, bool Wireframe, bool ShowSkel);

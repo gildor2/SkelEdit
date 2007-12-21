@@ -23,6 +23,7 @@
 
 //!!!!!!
 static CSkeletalMesh		Mesh;
+static CAnimSet				Anim;
 static CSkelMeshInstance	*MeshInst;
 
 
@@ -98,11 +99,23 @@ void DumpStruc(FILE *f, CStruct *S, int indent = 0)
 	OpenGL canvas
 -----------------------------------------------------------------------------*/
 
+//?? change
+inline unsigned GetMilliseconds()
+{
+#if _WIN32
+	return GetTickCount();
+#else
+#error Port this!
+#endif
+}
+
+
 class GLCanvas : public wxGLCanvas
 {
 public:
 	bool				mShowWireframe;
 	bool				mShowSkeleton;
+	unsigned			mLastFrameTime;
 
 	GLCanvas(wxWindow *parent)
 	:	wxGLCanvas(parent, wxID_ANY, NULL, wxDefaultPosition, wxSize(300, 300), wxSUNKEN_BORDER)
@@ -110,6 +123,7 @@ public:
 	,	mShowSkeleton(false)
 	{
 		mContext = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
+		mLastFrameTime = GetMilliseconds();
 		SetCurrent(*mContext);
 	}
 
@@ -127,6 +141,12 @@ protected:
 	void Render()
 	{
 		guard(GLCanvas::Render);
+
+		unsigned currTime = GetMilliseconds();
+		float frameTime = (currTime - mLastFrameTime) / 1000.0f;
+		mLastFrameTime = currTime;
+		static int frame = 0;
+		DrawTextRight("Frame: "S_GREEN"%d\n"S_WHITE"FPS: "S_GREEN"%3.1f", frame++, 1.0f / frameTime);	//!!
 
 		// prepare frame
 		glClearColor(CLEAR_COLOR);
@@ -153,15 +173,13 @@ protected:
 		//!! should change this !!
 		if (MeshInst)
 		{
-			MeshInst->UpdateAnimation(0);
+			MeshInst->UpdateAnimation(frameTime);
 			MeshInst->DrawMesh(mShowWireframe);
 			if (mShowSkeleton)
 				MeshInst->DrawSkeleton();
 		}
 
 		GL::Set2Dmode();
-		static int frame = 0;
-		DrawTextRight("Frame: "S_GREEN"%d\n", frame++);	//!!
 		FlushTexts();
 
 		// finish frame
@@ -377,7 +395,7 @@ protected:
 		unguard;
 	}
 
-	void OnHideTop2(wxMouseEvent &event)
+	void OnHideTop2(wxMouseEvent&)
 	{
 		wxMenuItem *Item = GetMenuBar()->FindItem(XRCID("ID_HIDETOPPANE"));
 		assert(Item);
@@ -390,7 +408,7 @@ protected:
 		ShowFrame(1, event.IsChecked());
 	}
 
-	void OnHideBottom2(wxMouseEvent &event)
+	void OnHideBottom2(wxMouseEvent&)
 	{
 		wxMenuItem *Item = GetMenuBar()->FindItem(XRCID("ID_HIDEBOTTOMPANE"));
 		assert(Item);
@@ -398,7 +416,7 @@ protected:
 		ShowFrame(1, false);
 	}
 
-	void OnMenuTest(wxCommandEvent &event)
+	void OnMenuTest(wxCommandEvent&)
 	{
 		//!! TEST STUFF
 		mMeshPropEdit->AttachObject((CStruct*)FindType("Test"), &GEditStruc);
@@ -413,7 +431,7 @@ protected:
 	/**
 	 *	Import mesh from foreign file
 	 */
-	void OnImportMesh(wxCommandEvent &event)
+	void OnImportMesh(wxCommandEvent&)
 	{
 		guard(MyFrame::OnImportMesh);
 
@@ -443,6 +461,35 @@ protected:
 	}
 
 	/**
+	 *	Import animations from foreign file
+	 */
+	void OnImportAnim(wxCommandEvent&)
+	{
+		guard(MyFrame::OnImportAnim);
+
+		wxFileDialog dlg(this, "Import animations from file ...", "", "",
+			"ActorX animation files (*.psa)|*.psa",
+			wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+		if (dlg.ShowModal() == wxID_OK)
+		{
+			const char *filename = dlg.GetPath().c_str();
+			appSetNotifyHeader("Importing animations from %s", filename);
+			CFileReader Ar(filename);	// note: will throw appError when failed
+			ImportPsa(Ar, Anim);
+
+			if (MeshInst)
+			{
+				MeshInst->SetAnim(&Anim);
+				MeshInst->LoopAnim("RunF");
+			}
+
+			appSetNotifyHeader("");
+		}
+
+		unguard;
+	}
+
+	/**
 	 *	Support for toggle some bool variable using menu and toolbar
 	 */
 	void SyncToggles(const char *name, bool value)
@@ -454,14 +501,14 @@ protected:
 		GetToolBar()->ToggleTool(id, value);
 	}
 
-#define HANDLE_TOGGLE(name, var)			\
-	void On_##name(wxCommandEvent &event)	\
-	{										\
-		var = !var;							\
-		SyncToggles(#name, var);			\
+#define HANDLE_TOGGLE(name, var)	\
+	void On_##name(wxCommandEvent&)	\
+	{								\
+		var = !var;					\
+		SyncToggles(#name, var);	\
 	}
 
-#define HOOK_TOGGLE(name)					\
+#define HOOK_TOGGLE(name)			\
 	EVT_MENU(XRCID("ID_"#name), MyFrame::On_##name)
 
 	// togglers ...
@@ -480,6 +527,7 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
 	EVT_MENU(XRCID("ID_HIDEBOTTOMPANE"), MyFrame::OnHideBottom)
 	EVT_MENU(XRCID("ID_MENUTEST"),       MyFrame::OnMenuTest  )	//???
 	EVT_MENU(XRCID("ID_MESHIMPORT"),     MyFrame::OnImportMesh)
+	EVT_MENU(XRCID("ID_ANIMIMPORT"),     MyFrame::OnImportAnim)
 	HOOK_TOGGLE(WIREFRAME)
 	HOOK_TOGGLE(SKELETON)
 END_EVENT_TABLE()

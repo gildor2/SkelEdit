@@ -43,8 +43,11 @@ public:
 		ClearSkelAnims();
 	}
 
-	void SetMesh(CSkeletalMesh *Mesh);
 	virtual ~CSkelMeshInstance();
+
+	void SetMesh(CSkeletalMesh *Mesh);
+	void SetAnim(CAnimSet *Anim);
+
 	void ClearSkelAnims();
 //??	void StopAnimating(bool ClearAllButBase);
 	void Draw();

@@ -1,0 +1,5 @@
+- serialization of Mesh and AnimSet (requires string support)
+  - add "int Version" field for AnimSet and SkeletalMesh
+- convert to .uc files, use generated code
+- PropEdit:
+  - editor for Rotator (degrees instead of 0..65535)

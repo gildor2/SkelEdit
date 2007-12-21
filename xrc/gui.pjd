@@ -462,7 +462,7 @@
               <string name="proxy-Member variable name">""</string>
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
               <document>
-                <string name="title">"Import ...: ID_MESHIMPORT"</string>
+                <string name="title">"&amp;Import ...: ID_MESHIMPORT"</string>
                 <string name="type">"dialog-control-document"</string>
                 <string name="filename">""</string>
                 <string name="icon-name">"menuitem"</string>
@@ -474,7 +474,7 @@
                 <string name="proxy-type">"wbMenuItemProxy"</string>
                 <string name="proxy-Id name">"ID_MESHIMPORT"</string>
                 <long name="proxy-Id value">10032</long>
-                <string name="proxy-Label">"Import ..."</string>
+                <string name="proxy-Label">"&amp;Import ..."</string>
                 <string name="proxy-Kind">"Normal"</string>
                 <bool name="proxy-Checked">0</bool>
                 <bool name="proxy-Enabled">1</bool>
@@ -500,6 +500,27 @@
               <string name="proxy-Help text">""</string>
               <bool name="proxy-Enabled">1</bool>
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              <document>
+                <string name="title">"&amp;Import ...: ID_ANIMIMPORT"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"21/12/2007"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_ANIMIMPORT"</string>
+                <long name="proxy-Id value">10035</long>
+                <string name="proxy-Label">"&amp;Import ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
             </document>
             <document>
               <string name="title">"Window"</string>

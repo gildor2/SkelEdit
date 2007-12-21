@@ -213,6 +213,10 @@ struct CCoords
 	CVec3	origin;
 	CAxis	axis;
 	// methods
+	inline void Zero()
+	{
+		memset(this, 0, sizeof(CCoords));
+	}
 	void TransformPoint(const CVec3 &src, CVec3 &dst) const;		// orthonormal 'this'
 	void TransformPointSlow(const CVec3 &src, CVec3 &dst) const;	// any 'this'
 	void UnTransformPoint(const CVec3 &src, CVec3 &dst) const;
@@ -230,6 +234,14 @@ void UnTransformPoint(const CVec3 &origin, const CAxis &axis, const CVec3 &src, 
 // compute reverse transformation
 void InvertCoords(const CCoords &S, CCoords &D);					// orthonormal S
 void InvertCoordsSlow(const CCoords &S, CCoords &D);				// any S
+
+inline void CoordsMA(CCoords &a, float scale, const CCoords &b)
+{
+	VectorMA(a.origin,  scale, b.origin );
+	VectorMA(a.axis[0], scale, b.axis[0]);
+	VectorMA(a.axis[1], scale, b.axis[1]);
+	VectorMA(a.axis[2], scale, b.axis[2]);
+}
 
 
 /*-----------------------------------------------------------------------------

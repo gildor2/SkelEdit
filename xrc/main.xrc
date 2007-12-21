@@ -36,11 +36,14 @@
             <object class="wxMenu">
                 <label>&amp;Mesh</label>
                 <object class="wxMenuItem" name="ID_MESHIMPORT">
-                    <label>Import ...</label>
+                    <label>&amp;Import ...</label>
                 </object>
             </object>
             <object class="wxMenu" name="ID_MENU1">
                 <label>Anim&amp;Set</label>
+                <object class="wxMenuItem" name="ID_ANIMIMPORT">
+                    <label>&amp;Import ...</label>
+                </object>
             </object>
             <object class="wxMenu">
                 <label>&amp;Window</label>
