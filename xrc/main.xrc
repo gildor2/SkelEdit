@@ -22,8 +22,16 @@
                     <label>Show &amp;wireframe\tCtrl+W</label>
                     <checkable>1</checkable>
                 </object>
+                <object class="wxMenuItem" name="ID_NORMALS">
+                    <label>Show &amp;normals\tCtrl+N</label>
+                    <checkable>1</checkable>
+                </object>
                 <object class="wxMenuItem" name="ID_SKELETON">
                     <label>Show &amp;skeleton\tCtrl+S</label>
+                    <checkable>1</checkable>
+                </object>
+                <object class="wxMenuItem" name="ID_REFPOSE">
+                    <label>Show mesh in binding pose</label>
                     <checkable>1</checkable>
                 </object>
                 <object class="separator">
@@ -69,9 +77,19 @@
                 <tooltip>Show wireframe</tooltip>
                 <toggle>1</toggle>
             </object>
+            <object class="tool" name="ID_NORMALS">
+                <bitmap>normals.png</bitmap>
+                <tooltip>Show normals</tooltip>
+                <toggle>1</toggle>
+            </object>
             <object class="tool" name="ID_SKELETON">
                 <bitmap>skeleton.png</bitmap>
                 <tooltip>Show mesh skeleton</tooltip>
+                <toggle>1</toggle>
+            </object>
+            <object class="tool" name="ID_REFPOSE">
+                <bitmap>refpose.png</bitmap>
+                <tooltip>Show mesh in binding pose</tooltip>
                 <toggle>1</toggle>
             </object>
         </object>
@@ -185,22 +203,9 @@
                                             <object class="sizeritem">
                                                 <flag>wxGROW|wxALL</flag>
                                                 <border>5</border>
-                                                <object class="wxButton" name="ID_BUTTON1">
-                                                    <label>Button</label>
-                                                </object>
-                                            </object>
-                                            <object class="sizeritem">
-                                                <flag>wxGROW|wxALL</flag>
-                                                <border>5</border>
-                                                <object class="wxBoxSizer">
-                                                    <orient>wxHORIZONTAL</orient>
-                                                    <object class="sizeritem">
-                                                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-                                                        <border>5</border>
-                                                        <option>1</option>
-                                                        <object class="wxTextCtrl" name="ID_TEXTCTRL2">
-                                                        </object>
-                                                    </object>
+                                                <option>1</option>
+                                                <object class="wxListBox" name="ID_ANIMLIST">
+                                                    <style>wxLB_SINGLE</style>
                                                 </object>
                                             </object>
                                         </object>
@@ -265,9 +270,70 @@
                 </object>
             </object>
             <object class="wxPanel" name="ID_RIGHTPANE">
-                <size>200,200</size>
-                <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
-                <bg>#400000</bg>
+                <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>0</border>
+                        <option>1</option>
+                        <object class="wxPanel" name="ID_CANVAS">
+                            <size>200,200</size>
+                            <style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
+                            <bg>#400000</bg>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                                <flag>wxGROW|wxTOP|wxBOTTOM</flag>
+                                <border>0</border>
+                                <object class="wxToolBar" name="ID_TOOLBAR2">
+                                    <style>wxTB_FLAT|wxTB_HORIZONTAL|wxTB_NODIVIDER</style>
+                                    <dontattachtoframe>1</dontattachtoframe>
+                                    <object class="tool" name="ID_PLAYANIM">
+                                        <bitmap>play.png</bitmap>
+                                        <tooltip>Play selected animation</tooltip>
+                                    </object>
+                                    <object class="tool" name="ID_STOPANIM">
+                                        <bitmap>pause.png</bitmap>
+                                        <tooltip>Stop playing animation</tooltip>
+                                    </object>
+                                    <object class="tool" name="ID_LOOPANIM">
+                                        <bitmap>loop.png</bitmap>
+                                        <tooltip>Loop selected animation</tooltip>
+                                        <toggle>1</toggle>
+                                    </object>
+                                    <object class="separator">
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxGROW|wxALL</flag>
+                                <border>0</border>
+                                <option>1</option>
+                                <object class="wxSlider" name="ID_ANIMPOS">
+                                    <size>200,-1</size>
+                                    <style>wxSL_HORIZONTAL</style>
+                                    <value>0</value>
+                                    <min>0</min>
+                                    <max>100</max>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxStaticText" name="ID_ANIMFRAME">
+                                    <size>70,-1</size>
+                                    <label>Frame: N/A</label>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
             </object>
         </object>
         <object class="wxStatusBar" name="ID_STATUSBAR1">

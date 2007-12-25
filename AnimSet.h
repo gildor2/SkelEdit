@@ -6,13 +6,13 @@
 
 struct CAnimBone
 {
-	char		Name[MAX_BONE_NAME];
+	TString<MAX_BONE_NAME> Name;
 };
 
 
 struct CMeshAnimSeq
 {
-	char		Name[MAX_ANIM_NAME];	//?? make string (size-safe serialization)
+	TString<MAX_ANIM_NAME> Name;
 	float		Rate;
 	int			NumFrames;
 	//!! add notifications here

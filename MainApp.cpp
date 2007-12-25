@@ -33,12 +33,6 @@ static CSkelMeshInstance	*MeshInst;
 
 #define DECLARE_BASE_CLASS(x)
 
-struct FString
-{
-	int hack;
-};
-
-
 #include "uc/out.h"
 
 /*struct FStruc
@@ -113,17 +107,19 @@ inline unsigned GetMilliseconds()
 class GLCanvas : public wxGLCanvas
 {
 public:
-	bool				mShowWireframe;
-	bool				mShowSkeleton;
-	unsigned			mLastFrameTime;
+	bool		mShowWireframe;
+	bool		mShowNormals;
+	bool		mShowSkeleton;
+	unsigned	mLastFrameTime;
 
 	GLCanvas(wxWindow *parent)
 	:	wxGLCanvas(parent, wxID_ANY, NULL, wxDefaultPosition, wxSize(300, 300), wxSUNKEN_BORDER)
 	,	mShowWireframe(false)
+	,	mShowNormals(false)
 	,	mShowSkeleton(false)
+	,	mLastFrameTime(GetMilliseconds())
 	{
 		mContext = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
-		mLastFrameTime = GetMilliseconds();
 		SetCurrent(*mContext);
 	}
 
@@ -145,8 +141,7 @@ protected:
 		unsigned currTime = GetMilliseconds();
 		float frameTime = (currTime - mLastFrameTime) / 1000.0f;
 		mLastFrameTime = currTime;
-		static int frame = 0;
-		DrawTextRight("Frame: "S_GREEN"%d\n"S_WHITE"FPS: "S_GREEN"%3.1f", frame++, 1.0f / frameTime);	//!!
+		DrawTextRight("FPS: "S_GREEN"%5.1f", 1.0f / frameTime);
 
 		// prepare frame
 		glClearColor(CLEAR_COLOR);
@@ -174,7 +169,7 @@ protected:
 		if (MeshInst)
 		{
 			MeshInst->UpdateAnimation(frameTime);
-			MeshInst->DrawMesh(mShowWireframe);
+			MeshInst->DrawMesh(mShowWireframe, mShowNormals);
 			if (mShowSkeleton)
 				MeshInst->DrawSkeleton();
 		}
@@ -260,28 +255,48 @@ END_EVENT_TABLE()
 	Main application frame
 -----------------------------------------------------------------------------*/
 
-// non-standard commands
-enum
-{
-	ID_FULLSCREEN = wxID_HIGHEST + 1
-};
-
+#define SLIDER_TICKS_PER_FRAME		10
 
 class MyFrame : public wxFrame
 {
 private:
+	// GUI variables
 	bool				mFrameVisible[2];
 	wxWindow			*mTopFrame, *mBottomFrame, *mRightFrame;
 	wxSplitterWindow	*mLeftSplitter, *mMainSplitter;
 	int					mMainSplitterPos;
 	GLCanvas			*mCanvas;
-	WPropEdit			*mMeshPropEdit;
+	WPropEdit			*mMeshPropEdit, *mAnimPropEdit;	//!! + mAnimSetPropEdit
+	wxListBox			*mAnimList;
+	wxSlider			*mAnimPosition;
+	wxStaticText		*mAnimLabel;
+	// animation control variables
+	unsigned			mLastFrameTime;
+	const CMeshAnimSeq	*mCurrAnim;
+	bool				mAnimLooped;
+	bool				mAnimPlaying;
+	bool				mShowRefpose;
+	float				mAnimFrame;
+
+	wxWindow* FindCtrl(const char *Name)
+	{
+		int id = wxXmlResource::GetXRCID(Name, -12345);
+		if (id == -12345)
+			appError("Resource error:\nIdent \"%s\" is not registered", Name);
+		wxWindow *res = FindWindow(id);
+		if (!res)
+			appError("Resource error:\nUnable to find control for \"%s\" (id=%d)", Name, id);
+		return res;
+	}
 
 public:
 	/**
 	 *	Constructor
 	 */
+
 	MyFrame(const wxString &title)
+	:	mCurrAnim(NULL)
+	,	mLastFrameTime(GetMilliseconds())
 	{
 		guard(MyFrame::MyFrame);
 
@@ -291,20 +306,21 @@ public:
 		mFrameVisible[0] = mFrameVisible[1] = true;
 		SetMinSize(wxSize(400, 300));
 		// find main controls
-		mTopFrame     = (wxWindow*)			FindWindow(XRCID("ID_TOPPANE"));
-		mBottomFrame  = (wxWindow*)			FindWindow(XRCID("ID_BOTTOMPANE"));
-		mRightFrame   = (wxWindow*)			FindWindow(XRCID("ID_RIGHTPANE"));
-		mLeftSplitter = (wxSplitterWindow*) FindWindow(XRCID("ID_LEFTSPLITTER"));
-		mMainSplitter = (wxSplitterWindow*) FindWindow(XRCID("ID_MAINSPLITTER"));
-		wxNotebook *propBase = (wxNotebook*)FindWindow(XRCID("ID_PROPBASE"));
-		if (!mTopFrame || !mBottomFrame || !mRightFrame || !mLeftSplitter || !mMainSplitter || !propBase)
-			wxLogFatalError("Incorrect frame resource");
+		mTopFrame     = (wxWindow*)			FindCtrl("ID_TOPPANE");
+		mBottomFrame  = (wxWindow*)			FindCtrl("ID_BOTTOMPANE");
+		mRightFrame   = (wxWindow*)			FindCtrl("ID_RIGHTPANE");
+		mLeftSplitter = (wxSplitterWindow*) FindCtrl("ID_LEFTSPLITTER");
+		mMainSplitter = (wxSplitterWindow*) FindCtrl("ID_MAINSPLITTER");
+		mAnimList     = (wxListBox*)        FindCtrl("ID_ANIMLIST");
+		mAnimPosition = (wxSlider*)         FindCtrl("ID_ANIMPOS");
+		mAnimLabel    = (wxStaticText*)     FindCtrl("ID_ANIMFRAME");
+		wxNotebook *propBase    = (wxNotebook*)FindCtrl("ID_PROPBASE");
+		wxWindow   *dummyCanvas = (wxWindow*)  FindCtrl("ID_CANVAS");
 		// replace right pane with GLCanvas control
-		mCanvas = new GLCanvas(mMainSplitter);
-		if (!mMainSplitter->ReplaceWindow(mRightFrame, mCanvas))
+		mCanvas = new GLCanvas(mRightFrame);
+		if (!mRightFrame->GetSizer()->Replace(dummyCanvas, mCanvas))
 			wxLogFatalError("Cannot replace control right pane with GLCanvas");
-		delete mRightFrame;
-		mRightFrame = mCanvas;
+		delete dummyCanvas;
 
 		// create property grid pages
 		mMeshPropEdit = new WPropEdit(propBase, wxID_ANY, wxDefaultPosition, wxDefaultSize,
@@ -312,22 +328,177 @@ public:
 		mMeshPropEdit->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
 		propBase->AddPage(mMeshPropEdit, "Mesh");
 
+		mAnimPropEdit = new WPropEdit(propBase, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+			wxPG_SPLITTER_AUTO_CENTER | wxPG_BOLD_MODIFIED | wxSUNKEN_BORDER | wxPG_DEFAULT_STYLE);
+		mAnimPropEdit->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
+		propBase->AddPage(mAnimPropEdit, "AnimSequence");
+
 		// init some controls
 		mMainSplitter->SetSashPosition(250);
 		mLeftSplitter->SetSashPosition(0);
 
-		int id = XRCID("ID_CLOSE_TOP");
-		FindWindow(id)->Connect(id, wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideTop2), NULL, this);
-		id = XRCID("ID_CLOSE_BOTTOM");
-		FindWindow(id)->Connect(id, wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideBottom2), NULL, this);
+		// attach message handlers
+		FindCtrl("ID_CLOSE_TOP")->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideTop2), NULL, this);
+		FindCtrl("ID_CLOSE_BOTTOM")->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideBottom2), NULL, this);
 
 		//!! TEST, REMOVE
 		InitTypeinfo2();
+
+		StopAnimation();
 
 		unguard;
 	}
 
 protected:
+	/**
+	 *	Animation management
+	 */
+	class WAnimInfo : public wxClientData
+	{
+	public:
+		CMeshAnimSeq *Anim;			// not 'conts' - can be edited
+		WAnimInfo(CMeshAnimSeq& A)
+		:	Anim(&A)
+		{}
+	};
+
+	void FillAnimList(wxListBox *List, CAnimSet *Anim)
+	{
+		guard(MyFrame::FillAnimList);
+		assert(Anim);
+
+		List->Clear();
+		for (int i = 0; i < Anim->AnimSeqs.Num(); i++)
+		{
+			CMeshAnimSeq &A = Anim->AnimSeqs[i];
+			List->Append(wxString::Format("%s [%d]", *A.Name, A.NumFrames), new WAnimInfo(A));
+		}
+
+		unguard;
+	}
+
+	void UseAnimSet(CAnimSet *Anim)
+	{
+		guard(MyFrame::UseAnimSet);
+		FillAnimList(mAnimList, Anim);
+		mCurrAnim = NULL;
+		if (MeshInst)
+		{
+			MeshInst->SetAnim(Anim);
+			MeshInst->PlayAnim("None");
+		}
+		unguard;
+	}
+
+	void OnAnimSelect(wxCommandEvent &event)
+	{
+		guard(OnAnimSelect);
+
+		// get animation info from item data
+		if (event.GetInt() == -1)
+		{
+			mCurrAnim = NULL;
+			return;		//!!! detach property editor
+		}
+		CMeshAnimSeq *A = ((WAnimInfo*) event.GetClientObject())->Anim;
+		assert(A);
+		//!! attach property editor
+		mAnimPropEdit->AttachObject((CStruct*)FindType("MeshAnimSeq"), A);
+		// setup mesh animation
+		StopAnimation();
+		mCurrAnim = A;
+		if (MeshInst)
+		{
+			// show tweening effect, and allow looping (to allow interpolation between
+			// last and first frame for local animation controller)
+			MeshInst->LoopAnim(A->Name, 0, 0.25);
+			// setup slider
+			mAnimPosition->SetRange(0, (A->NumFrames - 1) * SLIDER_TICKS_PER_FRAME);
+		}
+
+		unguard;
+	}
+
+	void OnPlayAnim(wxCommandEvent&)
+	{
+		mAnimFrame   = 0;
+		mAnimPlaying = true;
+	}
+
+	void OnStopAnim(wxCommandEvent&)
+	{
+		if (MeshInst && mCurrAnim)
+			mAnimPlaying = !mAnimPlaying;
+	}
+
+	void OnLoopToggle(wxCommandEvent &event)
+	{
+		mAnimLooped = event.IsChecked();
+	}
+
+	void OnSetAnimPos(wxScrollEvent&)
+	{
+		if (mAnimPlaying || !MeshInst || !mCurrAnim || !mCurrAnim->Rate)
+			return;
+		mAnimFrame = (float)mAnimPosition->GetValue() / SLIDER_TICKS_PER_FRAME;
+	}
+
+	/**
+	 *	Very basic animation controller
+	 */
+	void UpdateAnimations(float timeDelta)
+	{
+		guard(MyFrame::UpdateAnimations);
+		if (!MeshInst || !mCurrAnim || !mCurrAnim->Rate)
+			return;
+
+		if (mAnimPlaying && !MeshInst->IsTweening())
+		{
+			// advance frame
+			mAnimFrame += timeDelta * mCurrAnim->Rate;
+			// clamp/wrap frame
+			if (!mAnimLooped)
+			{
+				if (mAnimFrame > mCurrAnim->NumFrames - 1)
+				{
+					mAnimFrame = mCurrAnim->NumFrames - 1;
+					mAnimPlaying = false;
+				}
+			}
+			else
+			{
+				if (mAnimFrame > mCurrAnim->NumFrames)	// 1 more frame for lerp between last and first frames
+					mAnimFrame = 0;
+			}
+			// update slider
+			mAnimPosition->SetValue(appFloor(mAnimFrame * SLIDER_TICKS_PER_FRAME));
+		}
+		// update animation
+		const char *wantAnim = mShowRefpose ? "None" : mCurrAnim->Name;
+		float dummyFrame, dummyNumFrames, dummyRate;
+		const char *playingAnim;
+		MeshInst->GetAnimParams(0, playingAnim, dummyFrame, dummyNumFrames, dummyRate);
+		if (strcmp(playingAnim, wantAnim) != 0)
+		{
+			mAnimFrame = 0;
+			MeshInst->LoopAnim(wantAnim, 0, 0.25);
+		}
+		if (!MeshInst->IsTweening() && !mShowRefpose)
+			MeshInst->FreezeAnimAt(mAnimFrame);
+		mAnimLabel->SetLabel(wxString::Format("Frame: %4.1f", mAnimFrame));
+
+		unguard;
+	}
+
+	void StopAnimation()
+	{
+		mAnimPlaying = false;
+		mAnimFrame   = 0;
+	}
+
+	/**
+	 *	Event handlers
+	 */
 	void OnExit(wxCommandEvent&)
 	{
 		Close(true);	//?? 'false'; should check for changes!
@@ -416,9 +587,11 @@ protected:
 		ShowFrame(1, false);
 	}
 
+	/*!!
+	 *	TEST STUFF
+	 */
 	void OnMenuTest(wxCommandEvent&)
 	{
-		//!! TEST STUFF
 		mMeshPropEdit->AttachObject((CStruct*)FindType("Test"), &GEditStruc);
 #if 0
 		FILE *f = fopen("test.log", "a");
@@ -434,6 +607,8 @@ protected:
 	void OnImportMesh(wxCommandEvent&)
 	{
 		guard(MyFrame::OnImportMesh);
+
+		StopAnimation();
 
 		wxFileDialog dlg(this, "Import mesh from file ...", "", "",
 			"ActorX mesh files (*.psk)|*.psk",
@@ -467,6 +642,8 @@ protected:
 	{
 		guard(MyFrame::OnImportAnim);
 
+		StopAnimation();
+
 		wxFileDialog dlg(this, "Import animations from file ...", "", "",
 			"ActorX animation files (*.psa)|*.psa",
 			wxFD_OPEN | wxFD_FILE_MUST_EXIST);
@@ -477,13 +654,8 @@ protected:
 			CFileReader Ar(filename);	// note: will throw appError when failed
 			ImportPsa(Ar, Anim);
 
-			if (MeshInst)
-			{
-				MeshInst->SetAnim(&Anim);
-				MeshInst->LoopAnim("RunF");
-			}
-
 			appSetNotifyHeader("");
+			UseAnimSet(&Anim);
 		}
 
 		unguard;
@@ -513,7 +685,22 @@ protected:
 
 	// togglers ...
 	HANDLE_TOGGLE(WIREFRAME, mCanvas->mShowWireframe)
+	HANDLE_TOGGLE(NORMALS,   mCanvas->mShowNormals  )
 	HANDLE_TOGGLE(SKELETON,  mCanvas->mShowSkeleton )
+	HANDLE_TOGGLE(REFPOSE,   mShowRefpose           )
+
+	/**
+	 *	Idle handler
+	 */
+	void OnIdle(wxIdleEvent &event)
+	{
+		// update local animation state
+		unsigned currTime = GetMilliseconds();
+		float frameTime = (currTime - mLastFrameTime) / 1000.0f;
+		mLastFrameTime = currTime;
+		UpdateAnimations(frameTime);
+		event.RequestMore();	// without this, only single OnIdle() will be generated
+	}
 
 private:
 	DECLARE_EVENT_TABLE()
@@ -521,6 +708,7 @@ private:
 
 
 BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+	EVT_IDLE(MyFrame::OnIdle)
 	EVT_MENU(wxID_EXIT,                  MyFrame::OnExit      )
 	EVT_MENU(XRCID("ID_FULLSCREEN"),     MyFrame::OnFullscreen)
 	EVT_MENU(XRCID("ID_HIDETOPPANE"),    MyFrame::OnHideTop   )
@@ -529,7 +717,14 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
 	EVT_MENU(XRCID("ID_MESHIMPORT"),     MyFrame::OnImportMesh)
 	EVT_MENU(XRCID("ID_ANIMIMPORT"),     MyFrame::OnImportAnim)
 	HOOK_TOGGLE(WIREFRAME)
-	HOOK_TOGGLE(SKELETON)
+	HOOK_TOGGLE(NORMALS  )
+	HOOK_TOGGLE(SKELETON )
+	HOOK_TOGGLE(REFPOSE  )
+	EVT_LISTBOX(XRCID("ID_ANIMLIST"),    MyFrame::OnAnimSelect)
+	EVT_MENU(XRCID("ID_PLAYANIM"),       MyFrame::OnPlayAnim  )
+	EVT_MENU(XRCID("ID_STOPANIM"),       MyFrame::OnStopAnim  )
+	EVT_MENU(XRCID("ID_LOOPANIM"),       MyFrame::OnLoopToggle)
+	EVT_COMMAND_SCROLL(XRCID("ID_ANIMPOS"), MyFrame::OnSetAnimPos)
 END_EVENT_TABLE()
 
 

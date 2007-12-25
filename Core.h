@@ -134,13 +134,6 @@ void appError(char *fmt, ...);
 void appSetNotifyHeader(const char *fmt, ...);
 void appNotify(char *fmt, ...);
 
-int  appSprintf(char *dest, int size, const char *fmt, ...);
-void appStrncpyz(char *dst, const char *src, int count);
-void appStrcatn(char *dst, int count, const char *src);
-
-char *appStrdup(const char *str);
-char *appStrdup(const char *str, CMemoryChain *chain);
-
 
 /*-----------------------------------------------------------------------------
 	Memory management
@@ -460,15 +453,25 @@ public:
 	friend CArchive& operator<<(CArchive &Ar, TArray &A)
 	{
 		guard(TArray<<);
-		assert(Ar.IsLoading);	//?? saving requires more code
-		A.Empty();
-		int Count;
-		Ar << AR_INDEX(Count);
-		T* Ptr = new T[Count];
-		A.DataPtr   = Ptr;
-		A.DataCount = Count;
-		A.MaxCount  = Count;
-		for (int i = 0; i < Count; i++)
+		T *Ptr;
+		if (Ar.IsLoading)
+		{
+			// array loading
+			A.Empty();
+			int Count;
+			Ar << AR_INDEX(Count);
+			Ptr = new T[Count];
+			A.DataPtr   = Ptr;
+			A.DataCount = Count;
+			A.MaxCount  = Count;
+		}
+		else
+		{
+			// array saving
+			Ar << AR_INDEX(A.DataCount);
+			Ptr = (T*)A.DataPtr;
+		}
+		for (int i = 0; i < A.DataCount; i++)
 			Ar << *Ptr++;
 		return Ar;
 		unguard;
@@ -478,6 +481,7 @@ public:
 
 
 
+#include "Strings.h"
 #include "Math3D.h"
 #include "Object.h"
 

@@ -108,6 +108,7 @@ public:
 
 	// structure creation
 	CProperty *AddField(const char *AName, const char *ATypeName, int ArraySize = 0);
+	void       AddField(CProperty *Prop);
 	void Finalize();
 	/**
 	 *	Field enumeration

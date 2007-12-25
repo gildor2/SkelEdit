@@ -99,74 +99,6 @@ void appUnwindThrow(const char *fmt, ...)
 
 
 /*-----------------------------------------------------------------------------
-	Miscellaneous
------------------------------------------------------------------------------*/
-
-int appSprintf(char *dest, int size, const char *fmt, ...)
-{
-	va_list	argptr;
-	va_start(argptr, fmt);
-	int len = vsnprintf(dest, size, fmt, argptr);
-	va_end(argptr);
-	if (len < 0 || len >= size - 1)
-		printf("appSprintf: overflow of %d\n", size);
-
-	return len;
-}
-
-
-void appStrncpyz(char *dst, const char *src, int count)
-{
-	if (count <= 0) return;	// zero-length string
-
-	char c;
-	do
-	{
-		if (!--count)
-		{
-			// out of dst space -- add zero to the string end
-			*dst = 0;
-			return;
-		}
-		c = *src++;
-		*dst++ = c;
-	} while (c);
-}
-
-
-void appStrcatn(char *dst, int count, const char *src)
-{
-	char *p = strchr(dst, 0);
-	int maxLen = count - (p - dst);
-	if (maxLen > 1)
-		appStrncpyz(p, src, maxLen);
-}
-
-
-/*-----------------------------------------------------------------------------
-	String allocation
------------------------------------------------------------------------------*/
-
-char *appStrdup(const char *str)
-{
-//	MEM_ALLOCATOR(str);
-	int size = strlen(str) + 1;
-	char *out = (char*)appMalloc(size);
-	memcpy(out, str, size);
-	return out;
-}
-
-char *appStrdup(const char *str, CMemoryChain *chain)
-{
-	assert(chain);
-	int size = strlen(str) + 1;
-	char *out = (char*)chain->Alloc(size);
-	memcpy(out, str, size);
-	return out;
-}
-
-
-/*-----------------------------------------------------------------------------
 	CArchive methods
 -----------------------------------------------------------------------------*/
 
@@ -176,23 +108,49 @@ CArchive& operator<<(CArchive &Ar, CCompactIndex &I)
 	{
 		byte b;
 		Ar << b;
-		int sign  = b & 0x80;
+		int sign  = b & 0x80;	// sign bit
 		int shift = 6;
 		int r     = b & 0x3F;
-		if (b & 0x40)
+		if (b & 0x40)			// has 2nd byte
 		{
 			do
 			{
 				Ar << b;
 				r |= (b & 0x7F) << shift;
 				shift += 7;
-			} while (b & 0x80);
+			} while (b & 0x80);	// has more bytes
 		}
 		I.Value = sign ? -r : r;
 	}
 	else
 	{
-		appError("write AR_INDEX is not implemented");
+		int v = I.Value;
+		byte b = 0;
+		if (v < 0)
+		{
+			v = -v;
+			b |= 0x80;			// sign
+		}
+		b |= v & 0x3F;
+		if (v <= 0x3F)
+		{
+			Ar << b;
+		}
+		else
+		{
+			b |= 0x40;			// has 2nd byte
+			v >>= 6;
+			Ar << b;
+			assert(v);
+			while (v)
+			{
+				b = v & 0x7F;
+				v >>= 7;
+				if (v)
+					b |= 0x80;	// has more bytes
+				Ar << b;
+			}
+		}
 	}
 	return Ar;
 }

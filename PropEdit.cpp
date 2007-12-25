@@ -60,8 +60,9 @@ wxPGWindowList WNoEditor::CreateControls(wxPropertyGrid *grid, wxPGProperty *pro
 #define SIMPLE_PROPERTY(TypeName,BaseType,DataType,VariantType) \
 class TypeName : public BaseType	\
 {									\
-public:								\
+protected:							\
 	DataType	*mPValue;			\
+public:								\
 	TypeName(const char *Name, DataType *pValue) \
 	:	BaseType(Name, wxPG_LABEL, *pValue) \
 	,	mPValue(pValue)				\
@@ -76,7 +77,6 @@ public:								\
 //!! add spins to all numeric props
 //!! byte, short: limit range
 //!! support for unsigned values
-//!! add strings
 //!! struc properties: should display prop text similar to (X=1,Y=0,Z=0) for some props, or "..." for all other
 SIMPLE_PROPERTY(WIntProperty,   wxIntProperty,   int,   Long  )
 SIMPLE_PROPERTY(WShortProperty, wxIntProperty,   short, Long  )
@@ -86,9 +86,10 @@ SIMPLE_PROPERTY(WBoolProperty,  wxBoolProperty,  bool,  Bool  )
 
 class WEnumProperty : public wxEnumProperty
 {
-public:
+protected:
 	byte		*mPValue;
 
+public:
 	WEnumProperty(const CProperty *Prop, byte *pValue)
 	:	wxEnumProperty(Prop->Name, wxPG_LABEL, NULL)
 	,	mPValue(pValue)
@@ -105,6 +106,26 @@ public:
 	{
 		wxEnumProperty::OnSetValue();
 		*mPValue = m_value.GetLong();
+	}
+};
+
+
+class WStringProp : public wxStringProperty
+{
+protected:
+	char		*mPValue;
+	int			mLength;
+
+public:
+	WStringProp(const char *Name, char *Value, int Length)
+	:	wxStringProperty(Name, wxPG_LABEL, Value)
+	,	mPValue(Value)
+	,	mLength(Length)
+	{}
+	virtual void OnSetValue()
+	{
+		wxStringProperty::OnSetValue();
+		appStrncpyz(mPValue, m_value.GetString().c_str(), mLength);
 	}
 };
 
@@ -210,6 +231,12 @@ void WPropEdit::PopulateProp(wxPGPropertyWithChildren *Parent, const CProperty *
 		AppendProperty(Parent, Prop, wxProp);
 		wxProp->SetAttribute(wxPG_BOOL_USE_CHECKBOX, (long)1);	// do this after AppendProperty()!
 	}
+	else if (!strcmp(Type->TypeName, "string"))
+	{
+		wxProp = new WStringProp(Prop->Name, (char*)Data, Prop->ArrayDim);
+		AppendProperty(Parent, Prop, wxProp);
+		wxProp->SetMaxLength(Prop->ArrayDim-1);					// do this after AppendProperty()!
+	}
 	else
 	{
 		// single property
@@ -274,7 +301,7 @@ void WPropEdit::PopulateStruct(wxPGPropertyWithChildren *Parent, const CStruct *
 		const CProperty *Prop = propList[i];
 
 		unsigned offset = Prop->StructOffset;
-		if (Prop->ArrayDim <= 1)
+		if (Prop->ArrayDim <= 1 || !strcmp(Prop->TypeInfo->TypeName, "string"))
 		{
 			// add single property
 			PopulateProp(Parent, Prop, OffsetPointer(Data, offset), Prop->Name);

@@ -45,38 +45,47 @@ CProperty *CStruct::AddField(const char *AName, const char *ATypeName, int Array
 {
 	guard(AddField);
 
+	const CType *Type = FindType(ATypeName);
+	CProperty *Prop = new CProperty(AName, Type, ArraySize);
+	AddField(Prop);
+	return Prop;
+
+	unguard;
+}
+
+
+void CStruct::AddField(CProperty *Prop)
+{
+	guard(CStruct::AddField2);
 	CProperty *last = NULL;
+	const CType *Type = Prop->TypeInfo;
 	for (CProperty *curr = FirstProp; curr; curr = curr->NextProp)
 	{
-		if (!strcmp(curr->Name, AName))
-			appError("Structure \"%s\" already has property \"%s\"", TypeName, AName);
+		if (!strcmp(curr->Name, Prop->Name))
+			appError("Structure \"%s\" already has property \"%s\"", Type->TypeName, Prop->Name);
 		last = curr;
 	}
 
-	const CType *Type = FindType(ATypeName);
-	CProperty *prop = new CProperty(AName, Type, ArraySize);
 	// link property
 	if (last)
-		last->NextProp = prop;
+		last->NextProp = Prop;
 	else
-		FirstProp = prop;
+		FirstProp = Prop;
 
 	// handle alignments, advance size
 	unsigned propAlign = Type->TypeAlign;
 	TypeSize = Align(TypeSize, propAlign);	// alignment for new prop
-	prop->StructOffset = TypeSize;			// remember property offset
-	if (ArraySize < 0)						//!! implement
+	Prop->StructOffset = TypeSize;			// remember property offset
+	if (Prop->ArrayDim < 0)					//!! implement
 		appError("dynamic arrays not yet implemented!");
-	if (ArraySize > 0)						// update structure size
-		TypeSize += Type->TypeSize * ArraySize;
+	if (Prop->ArrayDim > 0)					// update structure size
+		TypeSize += Type->TypeSize * Prop->ArrayDim;
 	else
 		TypeSize += Type->TypeSize;
 	TypeAlign = max(TypeAlign, propAlign);	// update structure alignment requirement
 	// update property counts
 	NumProps++;
 	TotalProps++;
-
-	return prop;
 
 	unguard;
 }
@@ -247,7 +256,7 @@ void InitTypeinfo(CArchive &Ar)
 	new CType("int",    sizeof(int)   );
 	new CType("float",  sizeof(float) );
 	new CType("double", sizeof(double));
-	new CType("string", 4);	//!!!!!!! IMPLEMENT STRINGS !!!!!
+	new CType("string", 1);			// real length is stored as array size
 	// read typeinfo file
 	ParseTypeinfoFile(Ar);
 }

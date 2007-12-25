@@ -124,8 +124,8 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 
 	// load primary header
 	LOAD_CHUNK(MainHdr, "ACTRHEAD");
-	if (MainHdr.TypeFlag != 1999801)
-		appNotify("WARNING: found PSK version %d", MainHdr.TypeFlag);
+//	if (MainHdr.TypeFlag != 1999801)
+//		appNotify("WARNING: found PSK version %d", MainHdr.TypeFlag);
 
 	// load points
 	LOAD_CHUNK(PtsHdr, "PNTS0000");
@@ -270,14 +270,14 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	{
 		CMeshBone   &B  = Mesh.Skeleton[i];
 		const VBone &SB = Bones[i];
-		appStrncpyz(B.Name, SB.Name, ARRAY_COUNT(B.Name));
+		B.Name = SB.Name;
 		TrimSpaces(B.Name);
 		B.Position    = SB.BonePos.Position;
 		B.Orientation = SB.BonePos.Orientation;
 		B.ParentIndex = SB.ParentIndex;
 	}
 	// sort bones by hierarchy
-	//!! should remap weights
+	//!! should remap weights, if it is possible to resort bones (or remove unused bones)
 	int sortedBones[MAX_MESH_BONES];
 	for (i = 0; i < numBones; i++)
 		sortedBones[i] = i;
@@ -285,7 +285,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	QSort(sortedBones+1, numBones - 1, SortBones);
 	for (i = 0; i < numBones; i++)
 		if (sortedBones[i] != i)
-			appError("Found mesh with insorted bones, should sort and remap!");	//!! remap bones/weights
+			appError("Found mesh with unsorted bones, should sort and remap!");	//!! remap bones/weights
 	unguard;
 
 	// import bone influences (vertex weight)
@@ -322,7 +322,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		}
 		if (numInfs > MAX_VERTEX_INFLUENCES)
 		{
-			appNotify("Vertex %d has too much influences (%d). Reducing.", numInfs);
+			appNotify("Vertex %d has too much influences (%d). Reducing.", i, numInfs);
 			numInfs = MAX_VERTEX_INFLUENCES;
 		}
 		// compute total weight
@@ -353,12 +353,18 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		}
 		if (j != numInfs)
 		{
-			appNotify("Vertex %d: cutting redundant influences", i);
+//			appNotify("Vertex %d: cutting redundant influences", i);
 			numInfs = j;					// trim influences
 			assert(numInfs);
 			scale = 1.0f / totalWeight;		// should rescale influences again
 			for (j = 0; j < numInfs; j++)
 				W[j].Weight *= scale;
+		}
+		// resize influences array if needed
+		if (numInfs != W.Num())
+		{
+			assert(numInfs < W.Num());
+			W.Remove(numInfs, W.Num() - numInfs);
 		}
 	}
 	unguard;
@@ -368,6 +374,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	{
 		CMeshPoint &P = Lod.Points[i];
 		TArray<CWeightInfo> &W = Weights[Wedges[i].PointIndex].W;
+		assert(W.Num() <= MAX_VERTEX_INFLUENCES);
 		for (j = 0; j < W.Num(); j++)
 		{
 			CMeshPoint::CWeight &Dst = P.Influences[j];
@@ -379,14 +386,64 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	}
 	unguard;
 
+	/*
+	 *	Generate normals for mesh
+	 */
+
+	guard(GenerateNormals);
+	// generate normals for triangles
+	TArray<CVec3> Normals;
+	Normals.Empty(numVerts);	// WARNING: assumed normals array will be zeroed
+	Normals.Add(numVerts);
+	for (i = 0; i < numTris; i++)
+	{
+		const VTriangle &Tri = Tris[i];
+		// get vertex indices
+		int i1 = Wedges[Tri.WedgeIndex[0]].PointIndex;
+		int i2 = Wedges[Tri.WedgeIndex[1]].PointIndex;
+		int i3 = Wedges[Tri.WedgeIndex[2]].PointIndex;
+		// compute edges
+		const CVec3 &V1 = Verts[i1];
+		const CVec3 &V2 = Verts[i2];
+		const CVec3 &V3 = Verts[i3];
+		CVec3 D1, D2, D3;
+		VectorSubtract(V2, V1, D1);
+		VectorSubtract(V3, V2, D2);
+		VectorSubtract(V1, V3, D3);
+		// compute normal
+		CVec3 norm;
+		cross(D2, D1, norm);
+		norm.Normalize();
+		// compute angles
+		D1.Normalize();
+		D2.Normalize();
+		D3.Normalize();
+		float angle1 = acos(-dot(D1, D3));
+		float angle2 = acos(-dot(D1, D2));
+		float angle3 = acos(-dot(D2, D3));
+		// add normals for triangle verts
+		VectorMA(Normals[i1], angle1, norm);
+		VectorMA(Normals[i2], angle2, norm);
+		VectorMA(Normals[i3], angle3, norm);
+	}
+	// normalize normals
+	for (i = 0; i < numVerts; i++)
+		Normals[i].Normalize();
+	// put normals to CMeshPoint
+	for (i = 0; i < numWedges; i++)
+	{
+		Lod.Points[i].Normal = Normals[Wedges[i].PointIndex];
+	}
+
+	unguard;
+
 	unguard;
 }
 
 
 //!! AFTER LOADING (COMMON FOR ALL FORMATS):
-//!! - compute normals (if none) -- add ability to recompute normals from menu
-//!! * normalize weights (check USkeletalMeshInstance code)
 //!! ? optimize mesh for vertex cache; may be, not needed, if it is done in renderer
+//!! ? find unused terminal bones
 //!! ? resort bones by hierarchy (check USkeletalMeshInstance code) -- will require to remap influences
 
 
@@ -452,7 +509,7 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	for (i = 0; i < numBones; i++)
 	{
 		CAnimBone &B = Anim.RefBones[i];
-		appStrncpyz(B.Name, Bones[i].Name, ARRAY_COUNT(B.Name));
+		B.Name = Bones[i].Name;
 		TrimSpaces(B.Name);
 	}
 	unguard;
@@ -465,7 +522,7 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	{
 		const AnimInfoBinary &Src = AnimInfo[i];
 		CMeshAnimSeq &A = Anim.AnimSeqs[i];
-		appStrncpyz(A.Name, Src.Name, ARRAY_COUNT(A.Name));
+		A.Name      = Src.Name;
 		A.Rate      = Src.AnimRate;
 		A.NumFrames = Src.NumRawFrames;
 		assert(Src.TotalBones == numBones);

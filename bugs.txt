@@ -5,3 +5,8 @@
   ? can disable continuous updating of viewport (when no animation running)
     to allow hints
   - use alternative hint display (statusbar, help panel etc)
+- "play" and "pause" buttons behaviour is almost identical
+- when mesh is scaled, soft normals skinning is incorrect (normal length is
+  not equals 1); needs additional scale; in-editor bug only; reproduce: set
+  MeshScale for any mesh to low value
+  ? possibly, OpenGL has flag to indicate "normals should be normalized"

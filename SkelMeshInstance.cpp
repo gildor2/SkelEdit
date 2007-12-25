@@ -37,8 +37,9 @@ struct CMeshBoneData
 
 CSkelMeshInstance::~CSkelMeshInstance()
 {
-	if (BoneData)  delete BoneData;
-	if (MeshVerts) delete MeshVerts;
+	if (BoneData)		delete BoneData;
+	if (MeshVerts)		delete MeshVerts;
+	if (MeshNormals)	delete MeshNormals;
 }
 
 
@@ -118,10 +119,12 @@ void CSkelMeshInstance::SetMesh(CSkeletalMesh *Mesh)
 	}
 
 	// allocate some arrays
-	if (BoneData)  delete BoneData;
-	if (MeshVerts) delete MeshVerts;
-	BoneData  = new CMeshBoneData[NumBones];
-	MeshVerts = new CVec3        [NumVerts];
+	if (BoneData)		delete BoneData;
+	if (MeshVerts)		delete MeshVerts;
+	if (MeshNormals)	delete MeshNormals;
+	BoneData    = new CMeshBoneData[NumBones];
+	MeshVerts   = new CVec3        [NumVerts];
+	MeshNormals = new CVec3        [NumVerts];
 
 	int i;
 	CMeshBoneData *data;
@@ -226,7 +229,7 @@ void CSkelMeshInstance::SetAnim(CAnimSet *Anim)
 		BoneData[i].BoneMap = -1;
 		// find reference bone in animation track
 		for (int j = 0; j < pAnim->RefBones.Num(); j++)
-			if (!strcmp(B.Name, pAnim->RefBones[j].Name))
+			if (B.Name == pAnim->RefBones[j].Name)
 			{
 				BoneData[i].BoneMap = j;
 				break;
@@ -243,7 +246,7 @@ int CSkelMeshInstance::FindBone(const char *BoneName) const
 {
 	assert(pMesh);
 	for (int i = 0; i < pMesh->Skeleton.Num(); i++)
-		if (!strcmp(pMesh->Skeleton[i].Name, BoneName))
+		if (pMesh->Skeleton[i].Name == BoneName)
 			return i;
 	return -1;
 }
@@ -254,7 +257,7 @@ int CSkelMeshInstance::FindAnim(const char *AnimName) const
 	if (!pAnim || !AnimName)
 		return -1;
 	for (int i = 0; i < pAnim->AnimSeqs.Num(); i++)
-		if (!strcmp(pAnim->AnimSeqs[i].Name, AnimName))
+		if (pAnim->AnimSeqs[i].Name == AnimName)
 			return i;
 	return -1;
 }
@@ -265,6 +268,16 @@ void CSkelMeshInstance::SetBoneScale(const char *BoneName, float scale)
 	int BoneIndex = FindBone(BoneName);
 	if (BoneIndex < 0) return;
 	BoneData[BoneIndex].Scale = scale;
+}
+
+
+bool CSkelMeshInstance::IsAnimating(int Channel)
+{
+	const CAnimChan &chn = GetStage(Channel);
+	if (!chn.Rate) return false;
+	if (chn.AnimIndex1 == ANIM_UNASSIGNED)
+		return false;
+	return true;
 }
 
 
@@ -418,12 +431,10 @@ void CSkelMeshInstance::UpdateSkeleton()
 	int Stage;
 	CAnimChan *Chn;
 	memset(BoneUpdateCounts, 0, sizeof(BoneUpdateCounts)); //!! remove later
-DrawTextRight(S_YELLOW"ANIM: %d stages", MaxAnimChannel+1);
 	for (Stage = 0, Chn = Channels; Stage <= MaxAnimChannel; Stage++, Chn++)
 	{
 		if (Stage > 0 && (Chn->AnimIndex1 == ANIM_UNASSIGNED || Chn->BlendAlpha <= 0))
 			continue;
-DrawTextRight("[%d] anim=%d + %d", Stage, Chn->AnimIndex1, Chn->AnimIndex2);
 
 		const CMotionChunk *Motion1  = NULL, *Motion2  = NULL;
 		const CMeshAnimSeq *AnimSeq1 = NULL, *AnimSeq2 = NULL;
@@ -562,6 +573,8 @@ DrawTextRight("[%d] anim=%d + %d", Stage, Chn->AnimIndex1, Chn->AnimIndex2);
 
 void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 {
+	guard(CSkelMeshInstance::UpdateAnimation);
+
 	// prepare bone-to-channel map
 	//?? optimize: update when animation changed only
 	for (int i = 0; i < pMesh->Skeleton.Num(); i++)
@@ -631,10 +644,11 @@ void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 			// whole subtree will be skipped in UpdateSkeleton(), so - mark root bone only
 			BoneData[Chn->RootBone].FirstChannel = Stage;
 		}
-		DrawTextRight(S_CYAN"chn[%d] time=%5.2f", Stage, Chn->Time);
 	}
 
 	UpdateSkeleton();
+
+	unguard;
 }
 
 
@@ -727,24 +741,6 @@ void CSkelMeshInstance::SetSecondaryBlend(int Channel, float BlendAlpha)
 }
 
 
-void CSkelMeshInstance::AnimStopLooping(int Channel)
-{
-	guard(CSkelMeshInstance::AnimStopLooping);
-	GetStage(Channel).Looped = false;
-	unguard;
-}
-
-
-void CSkelMeshInstance::FreezeAnimAt(float Time, int Channel)
-{
-	guard(CSkelMeshInstance::FreezeAnimAt);
-	CAnimChan &Chn = GetStage(Channel);
-	Chn.Time = Time;
-	Chn.Rate = 0;
-	unguard;
-}
-
-
 void CSkelMeshInstance::GetAnimParams(int Channel, const char *&AnimName,
 	float &Frame, float &NumFrames, float &Rate) const
 {
@@ -821,7 +817,7 @@ void CSkelMeshInstance::DrawSkeleton()
 }
 
 
-void CSkelMeshInstance::DrawMesh(bool Wireframe)
+void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals)
 {
 	guard(CSkelMeshInstance::DrawMesh);
 	int i;
@@ -833,36 +829,29 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe)
 	//?? can specify LOD number for drawing
 	const CSkeletalMeshLod &Lod = pMesh->Lods[0];
 
-	//?? try other tech: compute weighted sum of matrices, and then
-	//?? transform vector (+ normal ?; note: normals requires normalized
-	//?? transformations ?? (or normalization guaranteed by sum(weights)==1?))
-	memset(MeshVerts, 0, sizeof(CVec3) * Lod.Points.Num());
-#if 0
-	for (i = 0; i < Lod.Points.Num(); i++)
+	// enable lighting
+	if (!Wireframe)
 	{
-//	for (i = 0; i < Mesh->VertInfluences.Num(); i++)
-//	{
-		const FVertInfluences &Inf  = pMesh->VertInfluences[i];
-		const CMeshBoneData   &data = BoneData[Inf.BoneIndex];
-		int PointIndex = Inf.PointIndex;
-		const CVec3 &Src = Mesh->Points[PointIndex];
-		CVec3 tmp;
-	#if 0
-		// variant 1: ref pose -> local bone space -> transformed bone to world
-		data.RefCoords.TransformPoint(Src, tmp);
-		data.Coords.UnTransformPoint(tmp, tmp);
-	#else
-		// variant 2: use prepared transformation (same result, but faster)
-		data.Transform.UnTransformPoint(Src, tmp);
-	#endif
-		VectorMA(MeshVerts[PointIndex], Inf.Weight, tmp);
+		glEnable(GL_LIGHTING);
+		static const float lightPos[4]      = {1000, -2000, 1000, 0};
+		static const float lightAmbient[4]  = {0.3, 0.3, 0.3, 1};
+		static const float specIntens[4]    = {1, 1, 1, 0};
+		glEnable(GL_COLOR_MATERIAL);
+		glEnable(GL_LIGHT0);
+		glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+		glLightfv(GL_LIGHT0, GL_AMBIENT,  lightAmbient);
+		glMaterialfv(GL_FRONT, GL_SPECULAR, specIntens);
+		glMaterialf(GL_FRONT, GL_SHININESS, 12);
 	}
-#else
+
+	// transform verts
+	memset(MeshVerts, 0, sizeof(CVec3) * Lod.Points.Num());
 	for (i = 0; i < Lod.Points.Num(); i++)
 	{
 		CCoords Transform;
 		Transform.Zero();
 		const CMeshPoint &P = Lod.Points[i];
+		// prepare weighted transofrmation
 		for (int j = 0; j < MAX_VERTEX_INFLUENCES; j++)
 		{
 			const CMeshPoint::CWeight &W = P.Influences[j];
@@ -871,14 +860,18 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe)
 				break;					// end of list
 			CoordsMA(Transform, W.Weight / 65535.0f, BoneData[BoneIndex].Transform);
 		}
+		// transform vertex
 		Transform.UnTransformPoint(P.Point, MeshVerts[i]);
+		// transform normal
+		Transform.axis.UnTransformVector(P.Normal, MeshNormals[i]);
 	}
-#endif
 
 	// prepare GL
 	glPolygonMode(GL_FRONT_AND_BACK, Wireframe ? GL_LINE : GL_FILL);
 	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
 	glVertexPointer(3, GL_FLOAT, /*?? sizeof(CMeshPoint)*/ sizeof(CVec3), MeshVerts);
+	glNormalPointer(GL_FLOAT, sizeof(CVec3), MeshNormals);
 
 	// draw all sections
 	for (int secIdx = 0; secIdx < Lod.Sections.Num(); secIdx++)
@@ -898,32 +891,24 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe)
 
 	// restore GL state
 	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDisable(GL_LIGHTING);
 
-	unguard;
-}
-
-
-/*!!
-void CSkelMeshInstance::Draw()
-{
-	guard(CSkelMeshInstance::Draw);
-
-	const USkeletalMesh   *Mesh   = GetMesh();
-	const CSkelMeshViewer *Viewer = static_cast<CSkelMeshViewer*>(Viewport);
-
-	// show skeleton
-	if (Viewer->ShowSkel)		//!! move this part to CSkelMeshViewer; call Inst->DrawSkeleton() etc
-		DrawSkeleton();
-	// show mesh
-	if (Viewer->ShowSkel != 2)
+	// draw mesh normals
+	if (Normals)
 	{
-		if (LodNum < 0)
-			DrawBaseSkeletalMesh();
-		else
-			DrawLodSkeletalMesh(&Mesh->LODModels[LodNum]);
+		glBegin(GL_LINES);
+		glColor3f(0.5, 1, 0);
+		for (i = 0; i < Lod.Points.Num(); i++)
+		{
+			glVertex3fv(MeshVerts[i].v);
+			CVec3 tmp;
+			VectorMA(MeshVerts[i], 2, MeshNormals[i], tmp);
+			glVertex3fv(tmp.v);
+		}
+		glEnd();
 	}
 
 	unguard;
 }
-*/

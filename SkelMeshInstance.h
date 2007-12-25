@@ -39,6 +39,7 @@ public:
 	,	MaxAnimChannel(-1)
 	,	BoneData(NULL)
 	,	MeshVerts(NULL)
+	,	MeshNormals(NULL)
 	{
 		ClearSkelAnims();
 	}
@@ -50,10 +51,9 @@ public:
 
 	void ClearSkelAnims();
 //??	void StopAnimating(bool ClearAllButBase);
-	void Draw();
 
 	void DrawSkeleton();
-	void DrawMesh(bool Wireframe);
+	void DrawMesh(bool Wireframe, bool Normals);
 
 	// skeleton configuration
 	void SetBoneScale(const char *BoneName, float scale = 1.0f);
@@ -72,8 +72,16 @@ public:
 	{
 		PlayAnimInternal(AnimName, 0, TweenTime, Channel, false);
 	}
-	void AnimStopLooping(int Channel);
-	void FreezeAnimAt(float Time, int Channel = 0);
+	void StopLooping(int Channel = 0)
+	{
+		GetStage(Channel).Looped = false;
+	}
+	void FreezeAnimAt(float Time, int Channel = 0)
+	{
+		CAnimChan &Chn = GetStage(Channel);
+		Chn.Time = Time;
+		Chn.Rate = 0;
+	}
 
 	// animation state
 
@@ -88,7 +96,8 @@ public:
 	{
 		return FindAnim(AnimName) >= 0;
 	}
-	bool IsTweening(int Channel)
+	bool IsAnimating(int Channel = 0);
+	bool IsTweening(int Channel = 0)
 	{
 		return GetStage(Channel).TweenTime > 0;
 	}
@@ -128,7 +137,8 @@ public:
 protected:
 	// mesh data
 	struct CMeshBoneData *BoneData;
-	CVec3		*MeshVerts;
+	CVec3		*MeshVerts;			//!! combine with MeshNormals
+	CVec3		*MeshNormals;
 	// animation state
 	CAnimChan	Channels[MAX_SKELANIMCHANNELS];
 	int			MaxAnimChannel;

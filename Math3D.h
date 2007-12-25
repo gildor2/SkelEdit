@@ -282,6 +282,11 @@ struct CQuat
 	void ToAxis(CAxis &dst) const;
 	float GetLength() const;
 
+	inline void Zero()
+	{
+		x = y = z = w = 0;
+	}
+
 	inline void Conjugate()
 	{
 		FNegate(x);

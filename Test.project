@@ -34,11 +34,12 @@ sources(MAIN) = {
 	SkelMeshInstance.cpp
 	# core libraries
 	Core.cpp
-	Object.cpp
+	Strings.cpp
 	Memory.cpp
 	Math3D.cpp
 	TextContainer.cpp
 	GlViewport.cpp
+	Object.cpp
 }
 
 target(executable, Test, MAIN, MAIN)

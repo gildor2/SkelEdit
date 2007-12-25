@@ -1,5 +1,36 @@
-- serialization of Mesh and AnimSet (requires string support)
-  - add "int Version" field for AnimSet and SkeletalMesh
 - convert to .uc files, use generated code
+
+- serialization:
+  - add "int Version" field for AnimSet and SkeletalMesh
+  - array saving
+  - CompactIndex saving
+  - create serializers for mesh/anim etc
+  - GUI:
+    - save/load mesh/anim
+    - "... was modified, save?" before open/import/quit
+
 - PropEdit:
   - editor for Rotator (degrees instead of 0..65535)
+  - editor for Vector (value as 'X=...,Y=...,Z=...')
+  - short and unsigned ints
+  - spin edits for numbers
+
+- logging:
+  - convert parts of appNotify() calls to log
+    - implement logging function (appPrintf()?)
+    - log should be overwritten every new start
+    - notify should contain errors and important events
+  - implement log window
+
+- animation:
+  - selection
+  - props, rename, delete
+  - playback (play/stop/loop/slider)
+
+- viewport:
+  - texturing
+  - lighting
+  - show floor
+
+- application:
+  - save splitter positions etc

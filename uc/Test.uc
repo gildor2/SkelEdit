@@ -169,7 +169,7 @@ var(Orientation)	Coords	Orient;
 	dependson(class list)	force to compile script after this class(es)
 	native					create C++ code for class; this class should be derived from another native class
  */
-var()				string	Description;
+var()				string[32] Description;
 var(Finish) editconst int	FinishField;
 var					int		SecondTestField;
 

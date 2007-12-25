@@ -40,10 +40,15 @@ struct CMeshPoint
 
 struct CMeshBone
 {
-	char			Name[MAX_BONE_NAME];		//?? string; REQUIRED FOR SERIALIZATION !
+	TString<MAX_BONE_NAME> Name;
 	CVec3			Position;
 	CQuat			Orientation;
 	int				ParentIndex;
+
+	friend CArchive& operator<<(CArchive &Ar, CMeshBone &B)
+	{
+		return Ar << B.Name << B.Position << B.Orientation << AR_INDEX(B.ParentIndex);
+	}
 };
 
 
@@ -52,6 +57,11 @@ struct CMeshSection
 	int				MaterialIndex;
 	int				FirstIndex;
 	int				NumIndices;
+
+	friend CArchive& operator<<(CArchive &Ar, CMeshSection &S)
+	{
+		return Ar << AR_INDEX(S.MaterialIndex) << S.FirstIndex << S.NumIndices;
+	}
 };
 
 
@@ -60,6 +70,11 @@ struct CSkeletalMeshLod
 	TArray<CMeshSection>	Sections;
 	TArray<CMeshPoint>		Points;
 	TArray<int>				Indices;
+
+	friend CArchive& operator<<(CArchive &Ar, CSkeletalMeshLod &L)
+	{
+		return Ar << L.Sections << L.Points << L.Indices;
+	}
 };
 
 
