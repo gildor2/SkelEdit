@@ -99,7 +99,7 @@ void appUnwindThrow(const char *fmt, ...)
 
 
 /*-----------------------------------------------------------------------------
-	CArchive methods
+	CArchive helpers
 -----------------------------------------------------------------------------*/
 
 CArchive& operator<<(CArchive &Ar, CCompactIndex &I)

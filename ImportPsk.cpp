@@ -1,4 +1,6 @@
 #include "Core.h"
+
+#include "uc/SkelTypes.h"	//??
 #include "Import.h"
 #include "ImportPsk.h"
 
@@ -111,10 +113,11 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	guard(ImportPsk);
 	int i, j;
 
-	/*
+	/*---------------------------------
 	 *	Load PSK file
-	 */
+	 *-------------------------------*/
 
+	// arrays to hold loaded data
 	TArray<CVec3>		Verts;
 	TArray<VVertex>		Wedges;
 	TArray<VTriangle>	Tris;
@@ -172,11 +175,11 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		Ar << Infs[i];
 
 	if (!Ar.IsEof())
-		appNotify("WARNING: extra bytes in source file");
+		appNotify("WARNING: extra bytes in source file (position %X)", Ar.ArPos);
 
-	/*
+	/*---------------------------------
 	 *	Import data into Mesh
-	 */
+	 *-------------------------------*/
 
 	// get lod model
 	//?? it should be possible to import mesh into specific LOD index
@@ -377,7 +380,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		assert(W.Num() <= MAX_VERTEX_INFLUENCES);
 		for (j = 0; j < W.Num(); j++)
 		{
-			CMeshPoint::CWeight &Dst = P.Influences[j];
+			CPointWeight &Dst = P.Influences[j];
 			Dst.BoneIndex = W[j].BoneIndex;
 			Dst.Weight    = appFloor(W[j].Weight * 65535.0f);
 		}
@@ -386,9 +389,9 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	}
 	unguard;
 
-	/*
+	/*---------------------------------
 	 *	Generate normals for mesh
-	 */
+	 *-------------------------------*/
 
 	guard(GenerateNormals);
 	// generate normals for triangles
@@ -456,10 +459,11 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	guard(ImportPsa);
 	int i, j, k;
 
-	/*
+	/*---------------------------------
 	 *	Load PSA file
-	 */
+	 *-------------------------------*/
 
+	// arrays to hold loaded data
 	TArray<FNamedBoneBinary>	Bones;
 	TArray<AnimInfoBinary>		AnimInfo;
 	TArray<VQuatAnimKey>		Keys;
@@ -491,16 +495,21 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 		Ar << Keys[i];
 
 	if (!Ar.IsEof())
-		appNotify("WARNING: extra bytes in source file");
+	{
+		// new PSA format have undocumented SCALEKEYS chunk
+		LOAD_CHUNK(UnkHdr, "SCALEKEYS");
+		if (!Ar.IsEof())
+			appNotify("WARNING: extra bytes in source file (position %X)", Ar.ArPos);
+	}
 
-	/*
+	/*---------------------------------
 	 *	Import data to AnimSet
-	 */
+	 *-------------------------------*/
 
-	Anim.RefBones.Empty(numBones);
-	Anim.RefBones.Add(numBones);
-	Anim.AnimSeqs.Empty(numAnims);
-	Anim.AnimSeqs.Add(numAnims);
+	Anim.TrackBoneName.Empty(numBones);
+	Anim.TrackBoneName.Add(numBones);
+	Anim.Sequences.Empty(numAnims);
+	Anim.Sequences.Add(numAnims);
 	Anim.Motion.Empty(numAnims);
 	Anim.Motion.Add(numAnims);
 
@@ -508,7 +517,7 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	guard(ImportBones);
 	for (i = 0; i < numBones; i++)
 	{
-		CAnimBone &B = Anim.RefBones[i];
+		CAnimBone &B = Anim.TrackBoneName[i];
 		B.Name = Bones[i].Name;
 		TrimSpaces(B.Name);
 	}
@@ -521,7 +530,7 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	for (i = 0; i < numAnims; i++)
 	{
 		const AnimInfoBinary &Src = AnimInfo[i];
-		CMeshAnimSeq &A = Anim.AnimSeqs[i];
+		CMeshAnimSeq &A = Anim.Sequences[i];
 		A.Name      = Src.Name;
 		A.Rate      = Src.AnimRate;
 		A.NumFrames = Src.NumRawFrames;

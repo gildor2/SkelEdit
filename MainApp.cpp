@@ -11,6 +11,10 @@
 
 #include "GlViewport.h"
 #include "FileReaderStdio.h"
+
+//!! CHECK
+#include "uc/SkelTypes.h"
+//!! ^^^^^
 #include "Import.h"
 
 #include "SkelMeshInstance.h"
@@ -22,8 +26,8 @@
 #define TYPEINFO_FILE	"uc/typeinfo.bin"
 
 //!!!!!!
-static CSkeletalMesh		Mesh;
-static CAnimSet				Anim;
+static CSkeletalMesh		*EditorMesh;
+static CAnimSet				*EditorAnim;
 static CSkelMeshInstance	*MeshInst;
 
 
@@ -31,29 +35,16 @@ static CSkelMeshInstance	*MeshInst;
 	RTTI test
 -----------------------------------------------------------------------------*/
 
-#define DECLARE_BASE_CLASS(x)
-
-#include "uc/out.h"
-
-/*struct FStruc
-{
-	CCoords		org;
-	int			field1;
-	float		field2;
-	short		field3;
-	bool		field4;
-};*/
-
-static UTest GEditStruc;
+//#define TEST_STRUC 1
+#if TEST_STRUC
+static CTest GEditStruc;
 
 void InitTypeinfo2()
 {
 	guard(InitTypeinfo2);
 
-	CFileReader Ar(TYPEINFO_FILE);
-	InitTypeinfo(Ar);
-
 	GEditStruc.Origin.Set(1, 2, 3);
+	GEditStruc.IntegerValueEd = 7654321;
 	GEditStruc.FloatValue = 12345.666;
 	GEditStruc.Orient.origin.Set(110, 112, 113);
 	GEditStruc.Orient.axis[0].Set(1, 0, 0);
@@ -61,9 +52,11 @@ void InitTypeinfo2()
 	GEditStruc.Orient.axis[2].Set(0, 0, 1);
 	GEditStruc.FinishField = 999777555;
 	GEditStruc.EnumValue = SE_VALUE3;
+	GEditStruc.Description = "Sample string";
 
 	unguard;
 }
+#endif
 
 
 void DumpStruc(FILE *f, CStruct *S, int indent = 0)
@@ -111,6 +104,7 @@ public:
 	bool		mShowNormals;
 	bool		mShowSkeleton;
 	unsigned	mLastFrameTime;
+	bool		mUpdateLocked;		//??????
 
 	GLCanvas(wxWindow *parent)
 	:	wxGLCanvas(parent, wxID_ANY, NULL, wxDefaultPosition, wxSize(300, 300), wxSUNKEN_BORDER)
@@ -121,17 +115,6 @@ public:
 	{
 		mContext = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
 		SetCurrent(*mContext);
-	}
-
-protected:
-	void OnPaint(wxPaintEvent &event)
-	{
-		// The following line is required; strange bugs without it (messageboxes not works,
-		// app cannot exit etc)
-		// This is a dummy, to avoid an endless succession of paint messages.
-		// OnPaint handlers must always create a wxPaintDC.
-		wxPaintDC dc(this);
-		Render();
 	}
 
 	void Render()
@@ -178,10 +161,21 @@ protected:
 		FlushTexts();
 
 		// finish frame
-		glFinish();			//????
+//		glFinish();			// will significantly reduce FPS
 		SwapBuffers();
 
 		unguard;
+	}
+
+protected:
+	void OnPaint(wxPaintEvent &event)
+	{
+		// The following line is required; strange bugs without it (messageboxes not works,
+		// app cannot exit etc)
+		// This is a dummy, to avoid an endless succession of paint messages.
+		// OnPaint handlers must always create a wxPaintDC.
+		wxPaintDC dc(this);
+		Render();
 	}
 
 	void OnSize(wxSizeEvent &event)
@@ -223,12 +217,13 @@ protected:
 
 	void OnIdle(wxIdleEvent &event)
 	{
+		if (mUpdateLocked) return;	//??????
 		//?? keep viewport constantly updating; check for other way?
 		//?? update when animation launched or view rotated only
 #if 0
-		Refresh(false);			// render via messaging system
+		Refresh(false);				// render via messaging system
 #else
-		Render();				// directly render scene
+		Render();					// directly render scene
 		event.RequestMore();	// without this, only single OnIdle() will be generated
 #endif
 	}
@@ -266,7 +261,7 @@ private:
 	wxSplitterWindow	*mLeftSplitter, *mMainSplitter;
 	int					mMainSplitterPos;
 	GLCanvas			*mCanvas;
-	WPropEdit			*mMeshPropEdit, *mAnimPropEdit;	//!! + mAnimSetPropEdit
+	WPropEdit			*mMeshPropEdit, *mAnimSetPropEdit, *mAnimPropEdit;
 	wxListBox			*mAnimList;
 	wxSlider			*mAnimPosition;
 	wxStaticText		*mAnimLabel;
@@ -328,6 +323,11 @@ public:
 		mMeshPropEdit->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
 		propBase->AddPage(mMeshPropEdit, "Mesh");
 
+		mAnimSetPropEdit = new WPropEdit(propBase, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+			wxPG_SPLITTER_AUTO_CENTER | wxPG_BOLD_MODIFIED | wxSUNKEN_BORDER | wxPG_DEFAULT_STYLE);
+		mAnimSetPropEdit->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
+		propBase->AddPage(mAnimSetPropEdit, "AnimSet");
+
 		mAnimPropEdit = new WPropEdit(propBase, wxID_ANY, wxDefaultPosition, wxDefaultSize,
 			wxPG_SPLITTER_AUTO_CENTER | wxPG_BOLD_MODIFIED | wxSUNKEN_BORDER | wxPG_DEFAULT_STYLE);
 		mAnimPropEdit->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
@@ -341,8 +341,10 @@ public:
 		FindCtrl("ID_CLOSE_TOP")->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideTop2), NULL, this);
 		FindCtrl("ID_CLOSE_BOTTOM")->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(MyFrame::OnHideBottom2), NULL, this);
 
+#if TEST_STRUC
 		//!! TEST, REMOVE
 		InitTypeinfo2();
+#endif
 
 		StopAnimation();
 
@@ -368,9 +370,9 @@ protected:
 		assert(Anim);
 
 		List->Clear();
-		for (int i = 0; i < Anim->AnimSeqs.Num(); i++)
+		for (int i = 0; i < Anim->Sequences.Num(); i++)
 		{
-			CMeshAnimSeq &A = Anim->AnimSeqs[i];
+			CMeshAnimSeq &A = Anim->Sequences[i];
 			List->Append(wxString::Format("%s [%d]", *A.Name, A.NumFrames), new WAnimInfo(A));
 		}
 
@@ -592,11 +594,11 @@ protected:
 	 */
 	void OnMenuTest(wxCommandEvent&)
 	{
-		mMeshPropEdit->AttachObject((CStruct*)FindType("Test"), &GEditStruc);
-#if 0
+#if TEST_STRUC
+		mMeshPropEdit->AttachObject(&GEditStruc);
 		FILE *f = fopen("test.log", "a");
 		fprintf(f, "\n\n---------\n\n");
-		DumpStruc(f, (CStruct*)FindType("SkeletalMesh"));
+		DumpStruc(f, (CStruct*)FindType("Test"));
 		fclose(f);
 #endif
 	}
@@ -618,16 +620,19 @@ protected:
 			const char *filename = dlg.GetPath().c_str();
 			appSetNotifyHeader("Importing mesh from %s", filename);
 			CFileReader Ar(filename);	// note: will throw appError when failed
-			ImportPsk(Ar, Mesh);
+
+			if (EditorMesh) delete EditorMesh;
+			EditorMesh = new CSkeletalMesh;
+			ImportPsk(Ar, *EditorMesh);
 
 			if (MeshInst)
 				delete MeshInst;
 			MeshInst = new CSkelMeshInstance;
-			MeshInst->SetMesh(&Mesh);
+			MeshInst->SetMesh(EditorMesh);
+			if (EditorAnim)
+				MeshInst->SetAnim(EditorAnim);
 
-			//???
-			//!! should get typeinfo from CObject automatically
-			mMeshPropEdit->AttachObject(&Mesh, (CStruct*)FindType("SkeletalMesh"));
+			mMeshPropEdit->AttachObject(EditorMesh);
 
 			appSetNotifyHeader("");
 		}
@@ -652,10 +657,15 @@ protected:
 			const char *filename = dlg.GetPath().c_str();
 			appSetNotifyHeader("Importing animations from %s", filename);
 			CFileReader Ar(filename);	// note: will throw appError when failed
-			ImportPsa(Ar, Anim);
+
+			if (EditorAnim) delete EditorAnim;
+			EditorAnim = new CAnimSet;
+			ImportPsa(Ar, *EditorAnim);
+
+			mAnimSetPropEdit->AttachObject(EditorAnim);
 
 			appSetNotifyHeader("");
-			UseAnimSet(&Anim);
+			UseAnimSet(EditorAnim);
 		}
 
 		unguard;
@@ -694,12 +704,18 @@ protected:
 	 */
 	void OnIdle(wxIdleEvent &event)
 	{
+		guard(MyFrame::OnIdle);
+
 		// update local animation state
 		unsigned currTime = GetMilliseconds();
 		float frameTime = (currTime - mLastFrameTime) / 1000.0f;
 		mLastFrameTime = currTime;
 		UpdateAnimations(frameTime);
+		if (!mAnimPlaying)
+			wxMilliSleep(10);
 		event.RequestMore();	// without this, only single OnIdle() will be generated
+
+		unguard;
 	}
 
 private:
@@ -774,6 +790,10 @@ public:
 		{
 			guard(MyApp::OnInit);
 
+			CFileReader Ar(TYPEINFO_FILE);
+			InitTypeinfo(Ar);
+			Ar.Close();
+
 			wxInitAllImageHandlers();
 			// initialize wxWidgets resource system
 			wxXmlResource::Get()->InitAllHandlers();
@@ -783,10 +803,14 @@ public:
 			MyFrame *frame = new MyFrame("");
 			// Show the frame
 			frame->Show(true);
+
+			// enable if there will be bugs with displaying multiline hints:
+#if 0
 			// create tooltip control with multiline handling (all subsequent calls
 			// to change tooltip will use window, created by following line)
 			frame->SetToolTip("\n");
 			frame->SetToolTip(NULL);
+#endif
 			// return true to continue
 			return true;
 

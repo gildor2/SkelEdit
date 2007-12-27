@@ -74,20 +74,28 @@ void CStruct::AddField(CProperty *Prop)
 
 	// handle alignments, advance size
 	unsigned propAlign = Type->TypeAlign;
+	if (Prop->ArrayDim < 0)
+		propAlign = max(sizeof(void*), sizeof(int)); // alignment of CArray
 	TypeSize = Align(TypeSize, propAlign);	// alignment for new prop
 	Prop->StructOffset = TypeSize;			// remember property offset
-	if (Prop->ArrayDim < 0)					//!! implement
-		appError("dynamic arrays not yet implemented!");
-	if (Prop->ArrayDim > 0)					// update structure size
+	if (Prop->ArrayDim < 0)					// dynamic array (TArray<>)
+	{
+		TypeSize += sizeof(CArray);
+	}
+	else if (Prop->ArrayDim > 0)			// update structure size for array
+	{
 		TypeSize += Type->TypeSize * Prop->ArrayDim;
-	else
+	}
+	else									// scalar property
+	{
 		TypeSize += Type->TypeSize;
+	}
 	TypeAlign = max(TypeAlign, propAlign);	// update structure alignment requirement
 	// update property counts
 	NumProps++;
 	TotalProps++;
 
-	unguard;
+	unguardf(("%s", Prop->Name));
 }
 
 
@@ -133,26 +141,14 @@ CProperty::CProperty(const char *AName, const CType *AType, int AArrayDim)
 {}
 
 
-//!! helper, should move
-static void ReadString(CArchive &Ar, char *buf, int maxSize)
-{
-	int len;
-	Ar << AR_INDEX(len);
-	assert(len < maxSize);
-	while (len-- > 0)
-		Ar << *buf++;
-	*buf = 0;
-}
-
-
 void ParseTypeinfoFile(CArchive &Ar)
 {
 	guard(ParseTypeinfoFile);
 
 	while (true)
 	{
-		char TypeName[256];
-		ReadString(Ar, ARRAY_ARG(TypeName));
+		TString<256> TypeName;
+		Ar << TypeName;
 		if (!TypeName[0]) break;					// end marker
 
 		guard(ParseType);
@@ -168,13 +164,13 @@ void ParseTypeinfoFile(CArchive &Ar)
 		case TYPE_ENUM:
 			{
 				CEnum *Enum = new (TypeChain) CEnum(TypeName);
-//				appNotify("Reading enum [%s]", TypeName);	//!!
+//				appNotify("Reading enum [%s]", *TypeName);	//!!
 				while (true)
 				{
-					char EnumItem[256];
-					ReadString(Ar, ARRAY_ARG(EnumItem));
+					TString<256> EnumItem;
+					Ar << EnumItem;
 					if (!EnumItem[0]) break;			// end marker
-//					appNotify("  . [%s]", EnumItem);	//!!
+//					appNotify("  . [%s]", *EnumItem);	//!!
 					Enum->AddValue(EnumItem);
 				}
 			}
@@ -185,42 +181,40 @@ void ParseTypeinfoFile(CArchive &Ar)
 			{
 				CStruct *Struc;
 				const CStruct *Parent = NULL;
-				char ParentName[256];
-				ReadString(Ar, ARRAY_ARG(ParentName));
+				TString<256> ParentName;
+				Ar << ParentName;
 				if (ParentName[0])
 				{
 					const CType *Parent2 = FindType(ParentName);
 					if (!Parent2->IsStruc)
-						appError("%s derived from non-structure type %s", TypeName, ParentName);
+						appError("%s derived from non-structure type %s", *TypeName, *ParentName);
 					Parent = (CStruct*)Parent2;
 				}
 
 				if (typeKind == TYPE_CLASS)
 				{
-					Struc = new (TypeChain) CClass(TypeName, (CClass*)Parent);	//!! here: CStruct->CSlass
+					Struc = new (TypeChain) CStruct(TypeName, Parent);	//!! here: use CSlass ?
 				}
 				else
 				{
 					Struc = new (TypeChain) CStruct(TypeName, Parent);
 				}
-//				appNotify("struct [%s] : [%s]", TypeName, ParentName);	//!!
+//				appNotify("struct [%s] : [%s]", *TypeName, *ParentName);	//!!
 
 				// read fields
 				while (true)
 				{
-					char FieldName[256], FieldType[256], EditorGroup[256], Comment[1024];
+					TString<256> FieldName, FieldType, EditorGroup;
+					TString<1024> Comment;
 					int ArrayDim;
 					unsigned Flags;
 					// read name
-					ReadString(Ar, ARRAY_ARG(FieldName));
+					Ar << FieldName;
 					if (!FieldName[0]) break;			// end marker
 					// read other fields
-					ReadString(Ar, ARRAY_ARG(FieldType));
-					Ar << AR_INDEX(ArrayDim) << Flags;
-					ReadString(Ar, ARRAY_ARG(Comment));
-					ReadString(Ar, ARRAY_ARG(EditorGroup));
+					Ar << FieldType << AR_INDEX(ArrayDim) << Flags << Comment << EditorGroup;
 //					appNotify("  . field [%s] %s[%d] (F=%X) /* %s */ GRP=[%s]",
-//						FieldName, FieldType, ArrayDim, Flags, Comment, EditorGroup);
+//						*FieldName, *FieldType, ArrayDim, Flags, *Comment, *EditorGroup);
 					// create property
 					CProperty *Prop = Struc->AddField(FieldName, FieldType, ArrayDim);
 					// fill other fields
@@ -236,10 +230,10 @@ void ParseTypeinfoFile(CArchive &Ar)
 			break;
 
 		default:
-			appError("unknown kind %d for type %s", typeKind, TypeName);
+			appError("unknown kind %d for type %s", typeKind, *TypeName);
 		}
 
-		unguardf(("%s", TypeName));
+		unguardf(("%s", *TypeName));
 	}
 
 	unguard;
@@ -250,81 +244,18 @@ void InitTypeinfo(CArchive &Ar)
 {
 	TypeChain = new CMemoryChain;
 	// register known types
-	new CType("bool",   sizeof(bool)  );
-	new CType("byte",   sizeof(byte)  );
-	new CType("short",  sizeof(short) );
-	new CType("int",    sizeof(int)   );
-	new CType("float",  sizeof(float) );
-	new CType("double", sizeof(double));
+#define T(name)					new CType(#name,  sizeof(name ));
+#define T2(name1, name2)		new CType(#name1, sizeof(name2));
+	T(bool)
+	T(byte)
+	T(short)
+	T2(ushort, word)
+	T(int)
+	T(unsigned)
+	T(float)
+	T(double)
+#undef T
 	new CType("string", 1);			// real length is stored as array size
 	// read typeinfo file
 	ParseTypeinfoFile(Ar);
 }
-
-
-#if TEST
-//!! remove this later, or make separate cpp
-
-//!! NEEDS: ability to iterate all items + child subitems ...
-
-void DumpStruc(CStruct *S, int indent = 0)
-{
-	if (indent > 32)
-		indent = 32;
-	char buf[256];
-	memset(buf, ' ', 256);
-	buf[indent+4] = 0;
-
-	printf("%s### %s (sizeof=%02X, align=%d):\n%s{\n", buf+4, S->TypeName, S->TypeSize, S->TypeAlign, buf+4);
-
-	for (int i = 0; /* empty */ ; i++)
-	{
-		const CProperty *Prop = S->IterateProps(i);
-		if (!Prop) break;
-		printf("%s[%2X] %-10s %s[%d]\n", buf, Prop->StructOffset, Prop->TypeInfo->TypeName, Prop->Name, Prop->ArrayDim);
-		if (Prop->TypeInfo->IsStruc)
-			DumpStruc((CStruct*)Prop->TypeInfo, indent+4);
-	}
-
-	printf("%s}\n", buf+4);
-}
-
-
-void main()
-{
-	try
-	{
-		CType BoolType  ("bool",   sizeof(bool)  );
-		CType ByteType  ("byte",   sizeof(byte)  );
-		CType IntType   ("short",  sizeof(short) );
-		CType ShortType ("int",    sizeof(int)   );
-		CType FloatType ("float",  sizeof(float) );
-		CType DoubleType("double", sizeof(double));
-
-		CStruct Vec("Vec");
-			Vec.AddField("X", "float");
-			Vec.AddField("Y", "float");
-			Vec.AddField("Z", "float");
-		Vec.Finalize();
-
-		CStruct Coord("Coord");
-			Coord.AddField("origin", "Vec");
-			Coord.AddField("axis", "Vec", 3);
-		Coord.Finalize();
-
-		CStruct Struc("FStruc");
-			Struc.AddField("org",  "Coord");
-			Struc.AddField("field1", "int");
-			Struc.AddField("field2", "float");
-			Struc.AddField("field3", "short");
-			Struc.AddField("field4", "bool");
-		Struc.Finalize();
-
-		DumpStruc(&Struc);
-	}
-	catch (...)
-	{
-		printf("ERROR: %s\n", GErrorHistory);
-	}
-}
-#endif

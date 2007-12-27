@@ -1,9 +1,13 @@
-- convert to .uc files, use generated code
+! implement typeinfo + editor for 'array<string[size]> name' and
+  'string[size] name[dim]' -- requires separate string size and
+  array size fields; use instead of AnimBone
+
+- uc parser:
+  - CPP: code to verify class sizes and field offsets
+  - make #ifndef __UNIT_NAME ... #define __UNIT_NAME ... #endif
 
 - serialization:
   - add "int Version" field for AnimSet and SkeletalMesh
-  - array saving
-  - CompactIndex saving
   - create serializers for mesh/anim etc
   - GUI:
     - save/load mesh/anim
@@ -14,6 +18,7 @@
   - editor for Vector (value as 'X=...,Y=...,Z=...')
   - short and unsigned ints
   - spin edits for numbers
+  - editor for TArray<>
 
 - logging:
   - convert parts of appNotify() calls to log
@@ -23,14 +28,12 @@
   - implement log window
 
 - animation:
-  - selection
-  - props, rename, delete
-  - playback (play/stop/loop/slider)
+  - rename, delete, import/append
 
 - viewport:
   - texturing
-  - lighting
   - show floor
 
 - application:
   - save splitter positions etc
+  - move all wx resources + typeinfo into zip file

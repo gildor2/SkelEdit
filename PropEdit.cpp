@@ -301,10 +301,28 @@ void WPropEdit::PopulateStruct(wxPGPropertyWithChildren *Parent, const CStruct *
 		const CProperty *Prop = propList[i];
 
 		unsigned offset = Prop->StructOffset;
-		if (Prop->ArrayDim <= 1 || !strcmp(Prop->TypeInfo->TypeName, "string"))
+		if (Prop->ArrayDim == 0 || Prop->ArrayDim == 1 || !strcmp(Prop->TypeInfo->TypeName, "string"))
 		{
 			// add single property
 			PopulateProp(Parent, Prop, OffsetPointer(Data, offset), Prop->Name);
+		}
+		else if (Prop->ArrayDim == -1)
+		{
+			//!! finish !!
+			// add array property
+			wxPGPropertyWithChildren *ArrayProp = new wxCustomProperty(Prop->Name);
+			AppendProperty(Parent, Prop, ArrayProp);
+			CArray *Arr = (CArray*)OffsetPointer(Data, offset);
+			offset = 0;
+			for (int Index = 0; Index < Arr->DataCount; Index++, offset += Prop->TypeInfo->TypeSize)
+			{
+				char PropName[32];
+				appSprintf(ARRAY_ARG(PropName), "[%d]", Index);
+				PopulateProp(ArrayProp, Prop, OffsetPointer(Arr->DataPtr, offset), PropName);
+			}
+			MarkContainerProp(ArrayProp);
+			if (Prop->IsReadonly)
+				MarkReadonly(ArrayProp);
 		}
 		else
 		{
@@ -394,13 +412,17 @@ void WPropEdit::AttachObject(CStruct *Type, void *Data)
 }
 
 
-void WPropEdit::AttachObject(CObject *Object, CStruct *Type)
+void WPropEdit::AttachObject(CObject *Object)
 {
+	guard(WPropEdit::AttachObject);
+	assert(Object);
+	const CType *Type = FindType(Object->GetClassName());
+	assert(Type->IsStruc);
 	m_EditObject = Object;
 	// cleanup grid from previous properties
 	Clear();
-	assert(Type && Object);
-	PopulateStruct(NULL, Type, Object);
+	PopulateStruct(NULL, (CStruct*)Type, Object);
 	// redraw control
 	Refresh();
+	unguardf(("class=%s", Object->GetClassName()));
 }

@@ -256,6 +256,7 @@ public:
 	CArchive()
 	:	ArStopper(0)
 	,	ArVer(9999)			//?? something large
+	,	ArPos(0)
 	{}
 
 	virtual ~CArchive()
@@ -270,6 +271,11 @@ public:
 		return ArStopper == ArPos;
 	}
 
+	friend CArchive& operator<<(CArchive &Ar, bool &B)
+	{
+		Ar.Serialize(&B, 1);
+		return Ar;
+	}
 	friend CArchive& operator<<(CArchive &Ar, char &B)
 	{
 		Ar.Serialize(&B, 1);
@@ -305,9 +311,6 @@ public:
 		Ar.Serialize(&B, 4);
 		return Ar;
 	}
-
-//	virtual CArchive& operator<<(FName &N) = NULL;
-//	virtual CArchive& operator<<(UObject *&Obj) = NULL;
 };
 
 void SerializeChars(CArchive &Ar, char *buf, int length);
@@ -318,6 +321,8 @@ void SerializeChars(CArchive &Ar, char *buf, int length);
 
 class CArray
 {
+	friend class WPropEdit;		// access protected properties
+
 public:
 	CArray()
 	:	DataCount(0)

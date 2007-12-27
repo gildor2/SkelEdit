@@ -1,7 +1,8 @@
 #include "Core.h"
 
-#include "SkeletalMesh.h"
-#include "AnimSet.h"
+//??#include "SkeletalMesh.h"
+//??#include "AnimSet.h"
+#include "uc/SkelTypes.h"		//??
 #include "SkelMeshInstance.h"
 
 #include "GlViewport.h"				//!! MOVE DRAWING CODE OUTSIDE FROM CLASS
@@ -228,8 +229,8 @@ void CSkelMeshInstance::SetAnim(CAnimSet *Anim)
 		const CMeshBone &B = pMesh->Skeleton[i];
 		BoneData[i].BoneMap = -1;
 		// find reference bone in animation track
-		for (int j = 0; j < pAnim->RefBones.Num(); j++)
-			if (B.Name == pAnim->RefBones[j].Name)
+		for (int j = 0; j < pAnim->TrackBoneName.Num(); j++)
+			if (B.Name == pAnim->TrackBoneName[j].Name)
 			{
 				BoneData[i].BoneMap = j;
 				break;
@@ -256,8 +257,8 @@ int CSkelMeshInstance::FindAnim(const char *AnimName) const
 {
 	if (!pAnim || !AnimName)
 		return -1;
-	for (int i = 0; i < pAnim->AnimSeqs.Num(); i++)
-		if (pAnim->AnimSeqs[i].Name == AnimName)
+	for (int i = 0; i < pAnim->Sequences.Num(); i++)
+		if (pAnim->Sequences[i].Name == AnimName)
 			return i;
 	return -1;
 }
@@ -442,11 +443,11 @@ void CSkelMeshInstance::UpdateSkeleton()
 		if (Chn->AnimIndex1 >= 0)
 		{
 			Motion1  = &pAnim->Motion  [Chn->AnimIndex1];
-			AnimSeq1 = &pAnim->AnimSeqs[Chn->AnimIndex1];
+			AnimSeq1 = &pAnim->Sequences[Chn->AnimIndex1];
 			if (Chn->AnimIndex2 >= 0 && Chn->SecondaryBlend)
 			{
-				Motion2  = &pAnim->Motion  [Chn->AnimIndex2];
-				AnimSeq2 = &pAnim->AnimSeqs[Chn->AnimIndex2];
+				Motion2  = &pAnim->Motion   [Chn->AnimIndex2];
+				AnimSeq2 = &pAnim->Sequences[Chn->AnimIndex2];
 				// compute time for secondary channel; always in sync with primary channel
 				Time2 = Chn->Time / AnimSeq1->NumFrames * AnimSeq2->NumFrames;
 			}
@@ -505,6 +506,8 @@ void CSkelMeshInstance::UpdateSkeleton()
 						Slerp(BO, BO2, Chn->SecondaryBlend, BO);
 					}
 				}
+				if (i > 0 && pAnim->AnimRotationOnly)
+					BP = pMesh->Skeleton[i].Position;
 			}
 			else
 			{
@@ -604,9 +607,9 @@ void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 		if (!Chn->TweenTime && Chn->AnimIndex1 >= 0)
 		{
 			// update animation time
-			const CMeshAnimSeq *Seq1 = &pAnim->AnimSeqs[Chn->AnimIndex1];
+			const CMeshAnimSeq *Seq1 = &pAnim->Sequences[Chn->AnimIndex1];
 			const CMeshAnimSeq *Seq2 = (Chn->AnimIndex2 >= 0 && Chn->SecondaryBlend)
-				? &pAnim->AnimSeqs[Chn->AnimIndex2]
+				? &pAnim->Sequences[Chn->AnimIndex2]
 				: NULL;
 
 			float Rate1 = Chn->Rate * Seq1->Rate;
@@ -755,7 +758,7 @@ void CSkelMeshInstance::GetAnimParams(int Channel, const char *&AnimName,
 		Rate      = 0;
 		return;
 	}
-	const CMeshAnimSeq &AnimSeq = pAnim->AnimSeqs[Chn.AnimIndex1];
+	const CMeshAnimSeq &AnimSeq = pAnim->Sequences[Chn.AnimIndex1];
 	AnimName  = AnimSeq.Name;
 	Frame     = Chn.Time;
 	NumFrames = AnimSeq.NumFrames;
@@ -832,6 +835,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals)
 	// enable lighting
 	if (!Wireframe)
 	{
+		glEnable(GL_NORMALIZE);
 		glEnable(GL_LIGHTING);
 		static const float lightPos[4]      = {1000, -2000, 1000, 0};
 		static const float lightAmbient[4]  = {0.3, 0.3, 0.3, 1};
@@ -854,7 +858,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals)
 		// prepare weighted transofrmation
 		for (int j = 0; j < MAX_VERTEX_INFLUENCES; j++)
 		{
-			const CMeshPoint::CWeight &W = P.Influences[j];
+			const CPointWeight &W = P.Influences[j];
 			int BoneIndex = W.BoneIndex;
 			if (BoneIndex == NO_INFLUENCE)
 				break;					// end of list
@@ -882,7 +886,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals)
 		// SetMaterial()
 		int color = Sec.MaterialIndex + 1;
 		if (color > 7) color = 7;
-#define C(n)	( ((color >> n) & 1) * 0.5f + 0.3f )
+#define C(n)	( ((color >> n) & 1) * 0.5f + 0.1f )
 		glColor3f(C(0), C(1), C(2));
 #undef C
 
@@ -894,6 +898,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals)
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glDisable(GL_LIGHTING);
+	glDisable(GL_NORMALIZE);
 
 	// draw mesh normals
 	if (Normals)

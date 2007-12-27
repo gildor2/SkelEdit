@@ -2,9 +2,9 @@
 
 =TODO =========================================================================
 
-- code to check class field offsets (computed from script, and check with
+- cpp: code to check class field offsets (computed from script, and check with
   FOFS() macro in cpp)
-- code to check native class sizes
+- cpp: code to check native class sizes
 
 =cut  =========================================================================
 
@@ -22,8 +22,29 @@ sub PROP_NATIVE		{ return 16; }
 
 
 # prefixes
-$CLASS_PREFIX = "U";
-$STRUC_PREFIX = "F";
+$CLASS_PREFIX = "C";
+$STRUC_PREFIX = "C";
+
+
+#------------------------------------------------------------------------------
+#	Utility functions
+#------------------------------------------------------------------------------
+
+# usage: GetTabs(string, resultColumn)
+sub GetTabs {
+	my ($str, $len) = @_;
+	my $i = length($str);
+	if ($i >= $len) {
+		return " ";
+	}
+	my $tab = "";
+	while ($i < $len)
+	{
+		$tab .= "\t";
+		$i += 4;
+	}
+	return $tab;
+}
 
 
 #------------------------------------------------------------------------------
@@ -159,7 +180,7 @@ sub GetToken {
 	}
 	else
 	{
-		($token, $restLine) = $PARSED_LINE =~ /^(\w+)\s*(.*)/;
+		($token, $restLine) = $PARSED_LINE =~ /^(\-?[\w\.]+)\s*(.*)/;
 	}
 	# cannot get token - return a single char
 	if (!defined($token))
@@ -242,10 +263,13 @@ sub GetTypeinfo {
 
 
 # register native types
-RegisterType("bool",  "bool",  TYPE_SCALAR);
-RegisterType("byte",  "byte",  TYPE_SCALAR);
-RegisterType("int",   "int",   TYPE_SCALAR);
-RegisterType("float", "float", TYPE_SCALAR);
+RegisterType("bool",   "bool",     TYPE_SCALAR);
+RegisterType("byte",   "byte",     TYPE_SCALAR);
+RegisterType("short",  "short",    TYPE_SCALAR);
+RegisterType("ushort", "word",     TYPE_SCALAR);
+RegisterType("int",    "int",      TYPE_SCALAR);
+RegisterType("uint",   "unsigned", TYPE_SCALAR);
+RegisterType("float",  "float",    TYPE_SCALAR);
 
 
 #------------------------------------------------------------------------------
@@ -293,8 +317,8 @@ sub WriteCompactIndex {
 
 sub WriteBinString {
 	my ($str) = $_[0];
-	WriteCompactIndex(length($str));
 	syswrite(TYPE, $str);
+	syswrite(TYPE, pack("C", 0));
 }
 
 
@@ -318,8 +342,36 @@ sub WriteBinTypeHdr {
 $PASS = 0;
 $NOCPP = 0;
 
-$CLASS_NAME   = "";
-$CLASS_PARENT = "";
+$CLASS_NAME    = "";
+$CLASS_PARENT  = "";
+$CLASS_COMMENT = "";
+
+sub GetComment {
+	my $cmt = $COMMENT;
+	$COMMENT = "";
+	if ($COMMENT_COUNT != 1 || $cmt !~ /^\*/) {
+		# no comment, or non-doxygen comment
+		$cmt = "" ;
+	} else {
+		$cmt =~ s/^\*\s*//;
+	}
+	return $cmt;
+}
+
+
+sub DumpComment {
+	my ($cmt, $tab) = @_;
+	if ($cmt)
+	{
+		print CPP "$tab/**\n";
+		my @lines = split('\n', $cmt);
+		for my $line (@lines) {
+			print CPP "$tab * $line\n";
+		}
+		print CPP "$tab */\n";
+	}
+}
+
 
 # returns an array of tokens until trailing ';'
 sub GetScriptLine {
@@ -332,11 +384,23 @@ sub GetScriptLine {
 	ParseError("unexpected EOF: ';' expected");
 }
 
+%defines = ();
+
+sub GetNumber {
+	my $num = $_[0];
+	return $num if $num =~ /^(\-)?[\d\.]+$/;
+	if (exists($defines{$num})) {
+		return $defines{$num};
+	}
+	ParseError("invalid number: $num");
+}
+
 
 sub ParseClassHeader {
 	# read script header
 	my $token = GetToken();
 	ExpectToken("class", $token);
+	$CLASS_COMMENT = GetComment();
 	my @HEADER = GetScriptLine();
 	ParseError("invalid class declaration") if !@HEADER;
 
@@ -385,14 +449,7 @@ sub ParseField {
 	#	FLAGS			set of PROP_XXX flags
 	#	EDITGROUP		visualization group for editor
 
-	my $HELP = $COMMENT;
-	if ($COMMENT_COUNT != 1 || $COMMENT !~ /^\*/) {
-		# no comment, or non-doxygen comment
-		$HELP = "" ;
-	} else {
-		$HELP =~ s/^\*\s*//;
-	}
-
+	my $HELP = GetComment();
 	# read @DESCR after taking comment
 	@DESCR = GetScriptLine();
 	ParseError("invalid variable declaration") if !@DESCR;
@@ -449,43 +506,47 @@ sub ParseField {
 	my $type = $tok;
 	my $natType;
 	my $strSize = 0;
+	my $dynArray = 0;
 	if ($type eq "string") {
 		# string[len]
 		ExpectToken("[", NextTok());
-		$strSize = NextTok();
+		my $sizeS = NextTok();
+		$strSize = GetNumber($sizeS);
 		ExpectToken("]", NextTok());
-		$natType = "TString<$strSize>";
+		$natType = "TString<$sizeS>";
+	} elsif ($type eq "array") {
+		# array<type>
+		$dynArray = 1;
+		ExpectToken("<", NextTok());
+		$type = NextTok();
+		ExpectToken(">", NextTok());
+		CheckIdent($type);
+		my $typeInfo = GetTypeinfo($type);
+		$natType = "TArray<".$typeInfo->{natName}.">";
 	} else {
 		# regular type
 		CheckIdent($type);
 		my $typeInfo = GetTypeinfo($type);
-		$natType  = $typeInfo->{natName};
+		$natType = $typeInfo->{natName};
 	}
 	# compute fine tabulations for C++ type-name declaration
-	my $tmp = length($natType);
-	my $typePad = " ";
-	if ($tmp < 4) {
-		$typePad = "\t\t\t";
-	} elsif ($tmp < 8) {
-		$typePad = "\t\t";
-	} elsif ($tmp < 12) {
-		$typePad = "\t";
-	}
-	#?? parse array<> here
-
+	my $typePad = GetTabs($natType, 28);
 	# parse variable name(s)
 	while (1)
 	{
 		my $name = NextTok();
 		CheckIdent($name);	#?? check for name duplicate
-		my $size = 0;
+		my $size  = 0;
+		my $sizeS = "";
 		# check for extra tokens
 		my $sep = NextTok(1);
 		if (defined($sep) && $sep eq "[") {
 			ParseError("string arrays are unsupported") if $strSize;
+			ParseError("arrays of arrays are unsupported") if $dynArray;
 			# static array declaration
-			$size = NextTok();
-			ParseError("invalid array size \"$size\"") if $size !~ /^\d+$/ || $size < 1;
+			$sizeS = NextTok();
+			$size = GetNumber($sizeS);
+			ParseError("invalid array size \"$size\"") if $size < 1;
 			ExpectToken("]", NextTok());
 			$sep = NextTok(1);
 		}
@@ -496,30 +557,24 @@ sub ParseField {
 			if (!($FLAGS & PROP_NOEXPORT) && !$NOCPP)
 			{
 				# create C++ field declaration
-				if ($HELP)
-				{
-					print CPP "\t/**\n";
-					my @lines = split('\n', $HELP);
-					for my $line (@lines) {
-						print CPP "\t * $line\n";
-					}
-					print CPP "\t */\n";
-				}
+				DumpComment($HELP, "\t");
 				print CPP "\t${natType}${typePad}${name}";
-				print CPP "[$size]" if $size > 0;
+				print CPP "[$sizeS]" if $size > 0;
 				print CPP ";\n";
 			}
-			# generate typeingo
-			WriteBinString($name);			# field name
-			WriteBinString($type);			# field type
-			if ($strSize == 0) {
-				WriteCompactIndex($size);	# array size
+			# generate typeinfo
+			WriteBinString($name);				# field name
+			WriteBinString($type);				# field type
+			if ($strSize) {
+				WriteCompactIndex($strSize);	# string length
+			} elsif ($dynArray) {
+				WriteCompactIndex(-1);			# dynamic array marker
 			} else {
-				WriteCompactIndex($strSize); # string length
+				WriteCompactIndex($size);		# array size (0 for scalars)
 			}
-			WriteBinDword($FLAGS);			# field flags
-			WriteBinString($HELP);			# comment
-			WriteBinString($EDITGROUP);		# editor group
+			WriteBinDword($FLAGS);				# field flags
+			WriteBinString($HELP);				# comment
+			WriteBinString($EDITGROUP);			# editor group
 #			print CPP "\t// ($FLAGS : \"$EDITGROUP\")\n";
 		}
 		# check for multiple variables in a single line declaration
@@ -574,6 +629,12 @@ sub ParseCppText {
 	ExpectToken("{", $sep);
 	ForceEmptyRestLine();
 	my $level = 1;
+	my $tabRemove = -1;
+	my $dump = $process && !$NOCPP;
+
+	if ($dump) {
+		print CPP "\n";
+	}
 	while (1)
 	{
 		my $line = GetNextLine();
@@ -592,6 +653,16 @@ sub ParseCppText {
 		}
 
 		if ($process && !$NOCPP) {
+			if ($tabRemove == -1) {
+				if ($line =~ /^\t\t/) {
+					$tabRemove = 1;
+				} else {
+					$tabRemove = 0;
+				}
+			}
+			if ($tabRemove) {
+				$line =~ s/^\t//;
+			}
 			print CPP "$line\n";
 		}
 	}
@@ -599,6 +670,7 @@ sub ParseCppText {
 
 
 sub ParseStruct {
+	my $HELP = GetComment();
 	my $strucName = GetToken();
 	my $parent = "";
 	my $process = $PASS == 1;
@@ -618,6 +690,8 @@ sub ParseStruct {
 	{
 		if (!$NOCPP)
 		{
+			print CPP "\n";
+			DumpComment($HELP, "");
 			print CPP "struct $natName";
 			print CPP " : ${STRUC_PREFIX}${parent}" if $parent;
 			print CPP "\n{\n";
@@ -646,6 +720,26 @@ sub ParseStruct {
 	}
 	$sep = GetToken();
 	ExpectToken(";", $sep);			#?? also can create enumeration variables here
+}
+
+
+sub ParseConst{
+	my ($process) = @_;
+	# "const name value;"
+	my $name = GetToken();
+	CheckIdent($name);
+	ExpectToken("=", GetToken());
+	my $value = GetNumber(GetToken());
+	ExpectToken(";", GetToken());
+
+	if ($process) {
+		# cpp declaration
+		my $tabs = GetTabs($name, 24);
+		print CPP "#define ${name}${tabs}${value}\n";
+		# register constant
+		ParseError("name \"$name\" is already defined") if exists($defines{$name});
+		$defines{$name} = $value;
+	}
 }
 
 
@@ -684,12 +778,18 @@ sub ParseFilePass {
 		WriteBinString($CLASS_PARENT);
 	}
 
-	if ($ExportClass && !$NOCPP)
+	if ($PASS == 1 && !$NOCPP)
 	{
-		# dump class header
 		print CPP "/*------------------------------------------------------------------------------\n";
 		print CPP "\t$CppName class (declared in $FILE_NAME)\n";
 		print CPP "------------------------------------------------------------------------------*/\n\n";
+	}
+
+	if ($ExportClass && !$NOCPP)
+	{
+		print CPP "\n";
+		# dump class header
+		DumpComment($CLASS_COMMENT, "");
 		print CPP "class $CppName";
 		if ($CLASS_PARENT) {
 			print CPP " : public ${CLASS_PREFIX}${CLASS_PARENT}\n";
@@ -712,6 +812,8 @@ sub ParseFilePass {
 #!!			ParseDefaultProps();
 		} elsif ($token eq "cpptext") {
 			ParseCppText($ExportClass);
+		} elsif ($token eq "const") {
+			ParseConst($PASS == 1 && !$NOCPP);
 		} else {
 			ParseError("unexpected token \"$token\"");
 		}
@@ -746,7 +848,8 @@ sub ParseFile {
 	$parsedFiles{$name} = 1;
 
 	$FILE_NAME = $name;
-	$PASS = 1;
+	$LINE_NO   = 0;
+	$PASS      = 1;
 	my $parent = ParseFilePass();
 	if ($parent)
 	{
@@ -760,15 +863,17 @@ sub ParseFile {
 		# ... then this file again
 #		print STDERR "*** parse $name again\n";
 		$FILE_NAME = $name;
-		$PASS = 1;
+		$LINE_NO   = 0;
+		$PASS      = 1;
 		ParseFilePass();
 	}
-	$PASS = 2;
+	$LINE_NO   = 0;
+	$PASS      = 2;
 	ParseFilePass();
 }
 
 
-open(CPP, ">out.h") or die "Cannot create header file";		#!! specify from command line
+open(CPP, ">SkelTypes.h") or die "Cannot create header file";		#!! specify from command line
 open(TYPE, ">typeinfo.bin") or die "Cannot create typeinfo file";
 binmode(TYPE);
 

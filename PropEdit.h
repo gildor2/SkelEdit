@@ -16,10 +16,10 @@ public:
 	void PopulateProp(wxPGPropertyWithChildren *Parent, const CProperty *Prop, void *Data, const char *PropName);
 
 	void AttachObject(CStruct *Type, void *Data);
-	void AttachObject(CObject *Object, CStruct *Type);
+	void AttachObject(CObject *Object);
 	inline void DetachObject()
 	{
-		AttachObject(NULL, (void*)NULL);
+		AttachObject(NULL, NULL);
 	}
 
 	void OnPropertyChange(wxPropertyGridEvent &event);

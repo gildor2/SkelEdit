@@ -3,7 +3,7 @@ class CProperty;
 class CObject;
 
 #undef DECLARE_CLASS		// defined in wxWidgets
-#define DECLARE_CLASS(x,y)	//!! MAKE IT !!
+
 
 /*-----------------------------------------------------------------------------
 	Type serialization consts
@@ -130,6 +130,7 @@ protected:
 	? class should be top, structs should be used inside classes only
 	- class can have 'virtual void UpdateProperties()', called by editor
  */
+#if 0
 /**
  *	Class declaration
  */
@@ -142,10 +143,10 @@ public:
 	{}
 	unsigned	ClassFlags;
 
-
 protected:
 	CObject* (*Constructor)();
 };
+#endif
 
 
 /*-----------------------------------------------------------------------------
@@ -153,7 +154,7 @@ protected:
 -----------------------------------------------------------------------------*/
 
 /**
- *	Base typeinfo for concrete structure/class single property
+ *	Typeinfo for concrete structure/class single property
  */
 class CProperty
 {
@@ -200,42 +201,6 @@ protected:
 };
 
 
-#if 0
-// UNUSED NOW
-
-class CBoolProperty : public CProperty
-{
-public:
-};
-
-
-class CEnumProperty : public CProperty
-{
-public:
-};
-
-
-class CNumericProperty : public CProperty
-{
-public:
-	//?? use for byte, [u]short, [u]int, float, double
-};
-
-
-//!! CStrProperty
-
-
-/**
- *	Structure, embedded into class
- */
-class CStructProperty : public CProperty
-{
-public:
-};
-
-#endif
-
-
 /*-----------------------------------------------------------------------------
 	Base object class
 -----------------------------------------------------------------------------*/
@@ -243,17 +208,27 @@ public:
 /**
  *	The base class of all objects
  */
-
 class CObject
 {
-private:
-	CClass		*TypeInfo;
-
 public:
 	virtual void UpdateProperties()
+	{}
+	virtual const char* GetClassName() const
+	{
+		return "Object";
+	}
+	virtual void Serialize(CArchive &Ar)
 	{}
 };
 
 
 void InitTypeinfo(CArchive &Ar);
 const CType *FindType(const char *Name, bool ShouldExist = true);
+
+
+#define DECLARE_CLASS(Class,Base)					\
+	public:											\
+		typedef Class	ThisClass;					\
+		typedef Base	Super;						\
+		virtual const char* GetClassName() const	\
+		{ return #Class+1; }

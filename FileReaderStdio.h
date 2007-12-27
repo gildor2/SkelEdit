@@ -30,6 +30,12 @@ public:
 		if (f) fclose(f);
 	}
 
+	void Close()
+	{
+		if (f) fclose(f);
+		f = NULL;
+	}
+
 	void Setup(FILE *InFile, bool Loading)
 	{
 		f         = InFile;

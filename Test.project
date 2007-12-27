@@ -1,7 +1,5 @@
 # perl highlighting
 
-TEST = 0
-
 LIBC       = shared
 #LIBC       = static
 #OUT        = Release
@@ -20,16 +18,9 @@ DEFINES    = WXUSINGDLL
 
 ALLOW_MISSING_INCLUDES = 1
 
-!if "$TEST" eq "1"
-	CONSOLE = 1
-	DEFINES += TEST
-!endif
-
 sources(MAIN) = {
-!if "$TEST" ne "1"
 	MainApp.cpp
 	PropEdit.cpp
-!endif
 	ImportPsk.cpp
 	SkelMeshInstance.cpp
 	# core libraries
