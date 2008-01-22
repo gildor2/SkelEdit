@@ -1,39 +1,112 @@
-! implement typeinfo + editor for 'array<string[size]> name' and
-  'string[size] name[dim]' -- requires separate string size and
-  array size fields; use instead of AnimBone
+! typeinfo:
+  - WriteAsText/ReadAsText
+    - can use for copy/paste in editor
+    - serialize array: can specify array size for optimized loading
+  - implement native/non-native props: CObject::Serialize() should serialize
+    non-native props automatically (useful for extension of the objects without
+    binary compatibility loss)
+    - "[struct]defaultproperties" section is desired for this; by default -
+      float(0), int(0), string("") etc
+  ? implement typeinfo + editor for 'array<string[size]> name' and
+    'string[size] name[dim]' -- requires separate string size and array size fields;
+    use instead of AnimBone
+  ? special string: "BoneName" -- create enum for this with filled bone names
+    a) cpecial callback interface for object: enumerate prop values by string_id;
+       example: "#ENUM BoneName"
+    b) (BETTER!): specify field, which will be iterated for list of bones; example
+      (for SkeletalMesh): "#ENUM Skeleton.Name" -- will iterate 'Skeleton' array and
+      lookup for 'Name' field; note: requires, that one and only one field in path
+      should be an array, everything other should be a structures!
+
+- mesh optimization:
+  - remove bones without bound verts (note: should provide a way to
+    keep "special" bones for attachments)
+  - normalize bone names:
+    - remove "BipNN" prefix
+    - replace " " with "_"
+    - lowercase
+  - animation compression:
+    - UI to select animations to compress
+    - ability to completely remove position tracks (MeshInstance should use
+      position from refpose in that case, even if AnimRotationOnly==false)
+    - info about compressed/uncompressed memory requirements for each
+      animation and total
+    - set error thresholds for key comparison (pos, quat)
+      - size error as % of whole mesh size or as absolute value
+      - quat error - as set of angles ?
+    ? can use PropEdit for setting up compression to simplify dialog creation
+    ? few presets for settings
+    ! check similar dialog in UnrealEd4
+    - smaller types: use fixed16 instead of float
+    - try compressed quaternions
+    - try delta compression + quantization (fixed point type); can store scale to
+      improve precision
+
+- data validation:
+  ? check automatically before mesh/anim saving
+  - check from UI
+  ? show log on errors ??
+  - mesh:
+    - check bone name duplicates
+    - check assignment of all materials
+  - animation:
+    - check sequence name duplication
+    - check for "AnimRotationOnly=true", but translation keys are not removed
+    - AnimRate should be >= 0
+
+- import mesh LOD:
+  - load as separate mesh
+  - compare skeleton hierarchy
+  - ref pose:
+    a) compare skeletons (should match)
+    b) convert verts to bone local space of meshB, then convert to global space using
+       meshA skeleton
+  - copy data to new LOD model
+
+- import/append animations:
+  - check skeleton hierarchy
 
 - uc parser:
   - CPP: code to verify class sizes and field offsets
-  - make #ifndef __UNIT_NAME ... #define __UNIT_NAME ... #endif
 
-- serialization:
-  - add "int Version" field for AnimSet and SkeletalMesh
-  - create serializers for mesh/anim etc
-  - GUI:
-    - save/load mesh/anim
-    - "... was modified, save?" before open/import/quit
+- UI:
+  - for mesh/anim: "... was modified, save?" before open/import/quit
+  - rename + delete AnimSeq
+  ? create xrc for AppSettings window, OK / Cancel (?) buttons
+    - will require method in dialog class to
+      1) copy GCfg to local place
+      2) ShowModal() + edit copy of config
+      3) if <OK> -> copy edited data back to GCfg
+      + process placement of prefs window here
 
 - PropEdit:
+  ? when nested property has only one field, can use it instead of container prop;
+    example:
+      struct SomeStruc { string[] Name };
+      ...
+      // somewhere used:
+      array<SomeStruc> Names;
+    current implementation will create:
+      + Names   | ...
+      + [0]     | ...
+          Name  | Name1
+      + [1]     | ...
+          Name  | Name2
+        etc
+    desired:
+      + Names   | ...
+        [0]     | Name1
+        [1]     | Name2
   - editor for Rotator (degrees instead of 0..65535)
   - editor for Vector (value as 'X=...,Y=...,Z=...')
   - short and unsigned ints
-  - spin edits for numbers
-  - editor for TArray<>
+  - spin edits for numbers (if possible - ala 3DSMax or UnrealEd, with mouse
+    movement capture)
+  - editor for TArray<>: add/move/delete items
 
 - logging:
-  - convert parts of appNotify() calls to log
-    - implement logging function (appPrintf()?)
-    - log should be overwritten every new start
-    - notify should contain errors and important events
-  - implement log window
-
-- animation:
-  - rename, delete, import/append
+  - log_file should be overwritten every new start
+  - notify_file should contain errors and important events
 
 - viewport:
-  - texturing
   - show floor
-
-- application:
-  - save splitter positions etc
-  - move all wx resources + typeinfo into zip file

@@ -7,6 +7,33 @@
         <object class="wxMenuBar" name="ID_MENUBAR1">
             <object class="wxMenu">
                 <label>&amp;File</label>
+                <object class="wxMenuItem" name="ID_MESHOPEN">
+                    <label>Open mesh ...</label>
+                </object>
+                <object class="wxMenuItem" name="ID_MESHSAVE">
+                    <label>Save mesh ...</label>
+                    <enabled>0</enabled>
+                </object>
+                <object class="wxMenuItem" name="ID_MESHIMPORT">
+                    <label>Import mesh ...</label>
+                </object>
+                <object class="separator">
+                </object>
+                <object class="wxMenuItem" name="ID_ANIMOPEN">
+                    <label>Open animset ...</label>
+                </object>
+                <object class="wxMenuItem" name="ID_ANIMSAVE">
+                    <label>Save animset ...</label>
+                    <enabled>0</enabled>
+                </object>
+                <object class="wxMenuItem" name="ID_ANIMIMPORT">
+                    <label>Import animset ...</label>
+                </object>
+                <object class="separator">
+                </object>
+                <object class="wxMenuItem" name="ID_SETTINGS">
+                    <label>&amp;Preferences ...</label>
+                </object>
                 <object class="wxMenuItem" name="ID_MENUTEST">
                     <label>Test\tAlt+S</label>
                 </object>
@@ -18,6 +45,10 @@
             </object>
             <object class="wxMenu">
                 <label>&amp;View</label>
+                <object class="wxMenuItem" name="ID_AXIS">
+                    <label>Show axis</label>
+                    <checkable>1</checkable>
+                </object>
                 <object class="wxMenuItem" name="ID_WIREFRAME">
                     <label>Show &amp;wireframe\tCtrl+W</label>
                     <checkable>1</checkable>
@@ -26,13 +57,28 @@
                     <label>Show &amp;normals\tCtrl+N</label>
                     <checkable>1</checkable>
                 </object>
+                <object class="wxMenuItem" name="ID_TEXTURING">
+                    <label>Disable mesh texturing\tCtrl+M</label>
+                    <checkable>1</checkable>
+                </object>
+                <object class="separator">
+                </object>
                 <object class="wxMenuItem" name="ID_SKELETON">
                     <label>Show &amp;skeleton\tCtrl+S</label>
+                    <checkable>1</checkable>
+                </object>
+                <object class="wxMenuItem" name="ID_BONENAMES">
+                    <label>Show &amp;bone names\tCtrl+B</label>
                     <checkable>1</checkable>
                 </object>
                 <object class="wxMenuItem" name="ID_REFPOSE">
                     <label>Show mesh in binding pose</label>
                     <checkable>1</checkable>
+                </object>
+                <object class="separator">
+                </object>
+                <object class="wxMenuItem" name="ID_RESETCAMERA">
+                    <label>&amp;Reset camera position\tCtrl+F</label>
                 </object>
                 <object class="separator">
                 </object>
@@ -43,15 +89,12 @@
             </object>
             <object class="wxMenu">
                 <label>&amp;Mesh</label>
-                <object class="wxMenuItem" name="ID_MESHIMPORT">
-                    <label>&amp;Import ...</label>
+                <object class="wxMenuItem" name="ID_DUMPBONES">
+                    <label>Dump bone info to log</label>
                 </object>
             </object>
             <object class="wxMenu" name="ID_MENU1">
                 <label>Anim&amp;Set</label>
-                <object class="wxMenuItem" name="ID_ANIMIMPORT">
-                    <label>&amp;Import ...</label>
-                </object>
             </object>
             <object class="wxMenu">
                 <label>&amp;Window</label>
@@ -65,12 +108,23 @@
                     <checkable>1</checkable>
                     <checked>1</checked>
                 </object>
+                <object class="separator">
+                </object>
+                <object class="wxMenuItem" name="ID_SHOWLOG">
+                    <label>Show &amp;Log Window\tCtrl+L</label>
+                    <checkable>1</checkable>
+                </object>
             </object>
         </object>
         <object class="wxToolBar" name="ID_TOOLBAR1">
             <style>wxTB_FLAT|wxTB_HORIZONTAL</style>
             <bitmapsize>24,24</bitmapsize>
             <object class="separator">
+            </object>
+            <object class="tool" name="ID_AXIS">
+                <bitmap>axis.png</bitmap>
+                <tooltip>Show axis</tooltip>
+                <toggle>1</toggle>
             </object>
             <object class="tool" name="ID_WIREFRAME">
                 <bitmap>wireframe.png</bitmap>
@@ -82,9 +136,21 @@
                 <tooltip>Show normals</tooltip>
                 <toggle>1</toggle>
             </object>
+            <object class="tool" name="ID_TEXTURING">
+                <bitmap>texturing.png</bitmap>
+                <tooltip>Disable texturing</tooltip>
+                <toggle>1</toggle>
+            </object>
+            <object class="separator">
+            </object>
             <object class="tool" name="ID_SKELETON">
                 <bitmap>skeleton.png</bitmap>
                 <tooltip>Show mesh skeleton</tooltip>
+                <toggle>1</toggle>
+            </object>
+            <object class="tool" name="ID_BONENAMES">
+                <bitmap>bonenames.png</bitmap>
+                <tooltip>Show bone names</tooltip>
                 <toggle>1</toggle>
             </object>
             <object class="tool" name="ID_REFPOSE">
@@ -104,7 +170,7 @@
                 <style>wxNO_BORDER</style>
                 <orientation>horizontal</orientation>
                 <sashpos>150</sashpos>
-                <minsize>100</minsize>
+                <minsize>150</minsize>
                 <object class="wxPanel" name="ID_TOPPANE">
                     <style>wxTAB_TRAVERSAL</style>
                     <object class="wxBoxSizer">
@@ -135,6 +201,7 @@
                                     <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
                                     <border>5</border>
                                     <object class="wxStaticText" name="ID_CLOSE_TOP">
+                                        <tooltip>Close panel</tooltip>
                                         <font>
                                             <size>8</size>
                                             <family>swiss</family>
@@ -165,7 +232,7 @@
                                             <hgap>0</hgap>
                                             <growablecols>0</growablecols>
                                             <object class="sizeritem">
-                                                <flag>wxALIGN_LEFT|wxALIGN_BOTTOM|wxALL</flag>
+                                                <flag>wxALIGN_LEFT|wxALIGN_BOTTOM|wxLEFT|wxRIGHT|wxTOP</flag>
                                                 <border>5</border>
                                                 <object class="wxStaticText" name="wxID_STATIC">
                                                     <label>Skeletal Mesh</label>
@@ -177,17 +244,19 @@
                                                 <size>5,5</size>
                                             </object>
                                             <object class="sizeritem">
-                                                <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxBOTTOM</flag>
+                                                <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
                                                 <border>5</border>
                                                 <option>1</option>
-                                                <object class="wxTextCtrl" name="ID_TEXTCTRL1">
+                                                <object class="wxTextCtrl" name="ID_MESHNAME">
+                                                    <style>wxTE_READONLY</style>
                                                 </object>
                                             </object>
                                             <object class="sizeritem">
-                                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxRIGHT|wxTOP|wxBOTTOM</flag>
+                                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxBOTTOM</flag>
                                                 <border>5</border>
-                                                <object class="wxButton" name="ID_OPENMESH">
-                                                    <size>20,-1</size>
+                                                <object class="wxButton" name="ID_MESHOPEN">
+                                                    <size>18,18</size>
+                                                    <tooltip>Open mesh file</tooltip>
                                                     <label>...</label>
                                                 </object>
                                             </object>
@@ -201,7 +270,54 @@
                                         <object class="wxBoxSizer">
                                             <orient>wxVERTICAL</orient>
                                             <object class="sizeritem">
-                                                <flag>wxGROW|wxALL</flag>
+                                                <flag>wxGROW</flag>
+                                                <border>5</border>
+                                                <object class="wxFlexGridSizer">
+                                                    <cols>2</cols>
+                                                    <rows>2</rows>
+                                                    <vgap>0</vgap>
+                                                    <hgap>0</hgap>
+                                                    <growablecols>0</growablecols>
+                                                    <object class="sizeritem">
+                                                        <flag>wxALIGN_LEFT|wxALIGN_BOTTOM|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                        <border>5</border>
+                                                        <object class="wxStaticText" name="wxID_STATIC">
+                                                            <label>AnimSet</label>
+                                                        </object>
+                                                    </object>
+                                                    <object class="spacer">
+                                                        <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                        <border>5</border>
+                                                        <size>5,5</size>
+                                                    </object>
+                                                    <object class="sizeritem">
+                                                        <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
+                                                        <border>5</border>
+                                                        <option>1</option>
+                                                        <object class="wxTextCtrl" name="ID_ANIMNAME">
+                                                            <style>wxTE_READONLY</style>
+                                                        </object>
+                                                    </object>
+                                                    <object class="sizeritem">
+                                                        <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxBOTTOM</flag>
+                                                        <border>5</border>
+                                                        <object class="wxButton" name="ID_ANIMOPEN">
+                                                            <size>18,18</size>
+                                                            <tooltip>Open animation file</tooltip>
+                                                            <label>...</label>
+                                                        </object>
+                                                    </object>
+                                                    <object class="sizeritem">
+                                                        <flag>wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                        <border>5</border>
+                                                        <object class="wxStaticText" name="wxID_STATIC">
+                                                            <label>Animation sequences</label>
+                                                        </object>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <flag>wxGROW|wxTOP</flag>
                                                 <border>5</border>
                                                 <option>1</option>
                                                 <object class="wxListBox" name="ID_ANIMLIST">
@@ -245,6 +361,7 @@
                                     <flag>wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM</flag>
                                     <border>5</border>
                                     <object class="wxStaticText" name="ID_CLOSE_BOTTOM">
+                                        <tooltip>Close panel</tooltip>
                                         <font>
                                             <size>8</size>
                                             <family>swiss</family>

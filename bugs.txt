@@ -1,6 +1,8 @@
 - bool property editor:
   - white border around checked non-selected property checkbox
-  - displaying "true/false" instead of checkbox for readonly property
+  - displaying "true/false" instead of checkbox for readonly properties
+
+- sometimes after importing AnimSet, viewport becomes rotated by significant degree
 
 - tooltip window will be cut (overdrawn) by opengl viewport
   ? can disable continuous updating of viewport (when no animation running)

@@ -299,6 +299,179 @@
               <string name="proxy-Member variable name">""</string>
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
               <document>
+                <string name="title">"Open mesh ...: ID_MESHOPEN"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_MESHOPEN"</string>
+                <long name="proxy-Id value">10044</long>
+                <string name="proxy-Label">"Open mesh ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"Save mesh ...: ID_MESHSAVE"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_MESHSAVE"</string>
+                <long name="proxy-Id value">10045</long>
+                <string name="proxy-Label">"Save mesh ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">0</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"Import mesh ...: ID_MESHIMPORT"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_MESHIMPORT"</string>
+                <long name="proxy-Id value">10032</long>
+                <string name="proxy-Label">"Import mesh ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"------------"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuSeparatorProxy"</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"Open animset ...: ID_ANIMOPEN"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_ANIMOPEN"</string>
+                <long name="proxy-Id value">10046</long>
+                <string name="proxy-Label">"Open animset ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"Save animset ...: ID_ANIMSAVE"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_ANIMSAVE"</string>
+                <long name="proxy-Id value">10047</long>
+                <string name="proxy-Label">"Save animset ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">0</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"Import animset ...: ID_ANIMIMPORT"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_ANIMIMPORT"</string>
+                <long name="proxy-Id value">10035</long>
+                <string name="proxy-Label">"Import animset ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"------------"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuSeparatorProxy"</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"&amp;Preferences ...: ID_SETTINGS"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"17/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_SETTINGS"</string>
+                <long name="proxy-Id value">10053</long>
+                <string name="proxy-Label">"&amp;Preferences ..."</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
                 <string name="title">"Test\tAlt+S: ID_MENUTEST"</string>
                 <string name="type">"dialog-control-document"</string>
                 <string name="filename">""</string>
@@ -370,6 +543,27 @@
               <string name="proxy-Member variable name">""</string>
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
               <document>
+                <string name="title">"Show axis: ID_AXIS"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"16/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_AXIS"</string>
+                <long name="proxy-Id value">10048</long>
+                <string name="proxy-Label">"Show axis"</string>
+                <string name="proxy-Kind">"Check"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
                 <string name="title">"Show &amp;wireframe\tCtrl+W: ID_WIREFRAME"</string>
                 <string name="type">"dialog-control-document"</string>
                 <string name="filename">""</string>
@@ -412,6 +606,40 @@
                 <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
               </document>
               <document>
+                <string name="title">"Disable mesh texturing\tCtrl+M: ID_TEXTURING"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"16/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_TEXTURING"</string>
+                <long name="proxy-Id value">10052</long>
+                <string name="proxy-Label">"Disable mesh texturing\tCtrl+M"</string>
+                <string name="proxy-Kind">"Check"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"------------"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"16/1/2008"</string>
+                <string name="proxy-type">"wbMenuSeparatorProxy"</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
                 <string name="title">"Show &amp;skeleton\tCtrl+S: ID_SKELETON"</string>
                 <string name="type">"dialog-control-document"</string>
                 <string name="filename">""</string>
@@ -425,6 +653,27 @@
                 <string name="proxy-Id name">"ID_SKELETON"</string>
                 <long name="proxy-Id value">10034</long>
                 <string name="proxy-Label">"Show &amp;skeleton\tCtrl+S"</string>
+                <string name="proxy-Kind">"Check"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"Show &amp;bone names\tCtrl+B: ID_BONENAMES"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"10/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_BONENAMES"</string>
+                <long name="proxy-Id value">10049</long>
+                <string name="proxy-Label">"Show &amp;bone names\tCtrl+B"</string>
                 <string name="proxy-Kind">"Check"</string>
                 <bool name="proxy-Checked">0</bool>
                 <bool name="proxy-Enabled">1</bool>
@@ -462,7 +711,41 @@
                 <long name="owns-file">1</long>
                 <long name="title-mode">0</long>
                 <long name="locked">0</long>
-                <string name="created">"18/12/2007"</string>
+                <string name="created">"10/1/2008"</string>
+                <string name="proxy-type">"wbMenuSeparatorProxy"</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"&amp;Reset camera position\tCtrl+F: ID_RESETCAMERA"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"17/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_RESETCAMERA"</string>
+                <long name="proxy-Id value">10051</long>
+                <string name="proxy-Label">"&amp;Reset camera position\tCtrl+F"</string>
+                <string name="proxy-Kind">"Normal"</string>
+                <bool name="proxy-Checked">0</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"------------"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"17/1/2008"</string>
                 <string name="proxy-type">"wbMenuSeparatorProxy"</string>
                 <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
               </document>
@@ -504,7 +787,7 @@
               <string name="proxy-Member variable name">""</string>
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
               <document>
-                <string name="title">"&amp;Import ...: ID_MESHIMPORT"</string>
+                <string name="title">"Dump bone info to log: ID_DUMPBONES"</string>
                 <string name="type">"dialog-control-document"</string>
                 <string name="filename">""</string>
                 <string name="icon-name">"menuitem"</string>
@@ -512,11 +795,11 @@
                 <long name="owns-file">1</long>
                 <long name="title-mode">0</long>
                 <long name="locked">0</long>
-                <string name="created">"18/12/2007"</string>
+                <string name="created">"11/1/2008"</string>
                 <string name="proxy-type">"wbMenuItemProxy"</string>
-                <string name="proxy-Id name">"ID_MESHIMPORT"</string>
-                <long name="proxy-Id value">10032</long>
-                <string name="proxy-Label">"&amp;Import ..."</string>
+                <string name="proxy-Id name">"ID_DUMPBONES"</string>
+                <long name="proxy-Id value">10050</long>
+                <string name="proxy-Label">"Dump bone info to log"</string>
                 <string name="proxy-Kind">"Normal"</string>
                 <bool name="proxy-Checked">0</bool>
                 <bool name="proxy-Enabled">1</bool>
@@ -542,27 +825,6 @@
               <string name="proxy-Help text">""</string>
               <bool name="proxy-Enabled">1</bool>
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
-              <document>
-                <string name="title">"&amp;Import ...: ID_ANIMIMPORT"</string>
-                <string name="type">"dialog-control-document"</string>
-                <string name="filename">""</string>
-                <string name="icon-name">"menuitem"</string>
-                <long name="is-transient">0</long>
-                <long name="owns-file">1</long>
-                <long name="title-mode">0</long>
-                <long name="locked">0</long>
-                <string name="created">"21/12/2007"</string>
-                <string name="proxy-type">"wbMenuItemProxy"</string>
-                <string name="proxy-Id name">"ID_ANIMIMPORT"</string>
-                <long name="proxy-Id value">10035</long>
-                <string name="proxy-Label">"&amp;Import ..."</string>
-                <string name="proxy-Kind">"Normal"</string>
-                <bool name="proxy-Checked">0</bool>
-                <bool name="proxy-Enabled">1</bool>
-                <string name="proxy-Help text">""</string>
-                <string name="proxy-Bitmap">""</string>
-                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
-              </document>
             </document>
             <document>
               <string name="title">"Window"</string>
@@ -616,6 +878,40 @@
                 <string name="proxy-Label">"Show &amp;Properties Window\tAlt+2"</string>
                 <string name="proxy-Kind">"Check"</string>
                 <bool name="proxy-Checked">1</bool>
+                <bool name="proxy-Enabled">1</bool>
+                <string name="proxy-Help text">""</string>
+                <string name="proxy-Bitmap">""</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"------------"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuSeparatorProxy"</string>
+                <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+              </document>
+              <document>
+                <string name="title">"Show &amp;Log Window\tCtrl+L: ID_SHOWLOG"</string>
+                <string name="type">"dialog-control-document"</string>
+                <string name="filename">""</string>
+                <string name="icon-name">"menuitem"</string>
+                <long name="is-transient">0</long>
+                <long name="owns-file">1</long>
+                <long name="title-mode">0</long>
+                <long name="locked">0</long>
+                <string name="created">"9/1/2008"</string>
+                <string name="proxy-type">"wbMenuItemProxy"</string>
+                <string name="proxy-Id name">"ID_SHOWLOG"</string>
+                <long name="proxy-Id value">10029</long>
+                <string name="proxy-Label">"Show &amp;Log Window\tCtrl+L"</string>
+                <string name="proxy-Kind">"Check"</string>
+                <bool name="proxy-Checked">0</bool>
                 <bool name="proxy-Enabled">1</bool>
                 <string name="proxy-Help text">""</string>
                 <string name="proxy-Bitmap">""</string>
@@ -717,6 +1013,28 @@
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
             </document>
             <document>
+              <string name="title">"Tool: ID_AXIS"</string>
+              <string name="type">"dialog-control-document"</string>
+              <string name="filename">""</string>
+              <string name="icon-name">"menuitem"</string>
+              <long name="is-transient">0</long>
+              <long name="owns-file">1</long>
+              <long name="title-mode">0</long>
+              <long name="locked">0</long>
+              <string name="created">"10/1/2008"</string>
+              <string name="proxy-type">"wbToolBarButtonProxy"</string>
+              <string name="proxy-Id name">"ID_AXIS"</string>
+              <long name="proxy-Id value">10048</long>
+              <string name="proxy-Bitmap">"axis.png"</string>
+              <string name="proxy-Bitmap (disabled)">""</string>
+              <string name="proxy-Label">""</string>
+              <string name="proxy-Kind">"Check"</string>
+              <bool name="proxy-Enabled">1</bool>
+              <string name="proxy-Tooltip">"Show axis"</string>
+              <string name="proxy-Help text">""</string>
+              <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+            </document>
+            <document>
               <string name="title">"Tool: ID_WIREFRAME"</string>
               <string name="type">"dialog-control-document"</string>
               <string name="filename">""</string>
@@ -761,6 +1079,41 @@
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
             </document>
             <document>
+              <string name="title">"Tool: ID_TEXTURING"</string>
+              <string name="type">"dialog-control-document"</string>
+              <string name="filename">""</string>
+              <string name="icon-name">"menuitem"</string>
+              <long name="is-transient">0</long>
+              <long name="owns-file">1</long>
+              <long name="title-mode">0</long>
+              <long name="locked">0</long>
+              <string name="created">"16/1/2008"</string>
+              <string name="proxy-type">"wbToolBarButtonProxy"</string>
+              <string name="proxy-Id name">"ID_TEXTURING"</string>
+              <long name="proxy-Id value">10052</long>
+              <string name="proxy-Bitmap">"texturing.png"</string>
+              <string name="proxy-Bitmap (disabled)">""</string>
+              <string name="proxy-Label">""</string>
+              <string name="proxy-Kind">"Check"</string>
+              <bool name="proxy-Enabled">1</bool>
+              <string name="proxy-Tooltip">"Disable texturing"</string>
+              <string name="proxy-Help text">""</string>
+              <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+            </document>
+            <document>
+              <string name="title">"----------"</string>
+              <string name="type">"dialog-control-document"</string>
+              <string name="filename">""</string>
+              <string name="icon-name">"menuitem"</string>
+              <long name="is-transient">0</long>
+              <long name="owns-file">1</long>
+              <long name="title-mode">0</long>
+              <long name="locked">0</long>
+              <string name="created">"16/1/2008"</string>
+              <string name="proxy-type">"wbToolBarSeparatorProxy"</string>
+              <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+            </document>
+            <document>
               <string name="title">"Tool: ID_SKELETON"</string>
               <string name="type">"dialog-control-document"</string>
               <string name="filename">""</string>
@@ -779,6 +1132,28 @@
               <string name="proxy-Kind">"Check"</string>
               <bool name="proxy-Enabled">1</bool>
               <string name="proxy-Tooltip">"Show mesh skeleton"</string>
+              <string name="proxy-Help text">""</string>
+              <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+            </document>
+            <document>
+              <string name="title">"Tool: ID_BONENAMES"</string>
+              <string name="type">"dialog-control-document"</string>
+              <string name="filename">""</string>
+              <string name="icon-name">"menuitem"</string>
+              <long name="is-transient">0</long>
+              <long name="owns-file">1</long>
+              <long name="title-mode">0</long>
+              <long name="locked">0</long>
+              <string name="created">"10/1/2008"</string>
+              <string name="proxy-type">"wbToolBarButtonProxy"</string>
+              <string name="proxy-Id name">"ID_BONENAMES"</string>
+              <long name="proxy-Id value">10049</long>
+              <string name="proxy-Bitmap">"bonenames.png"</string>
+              <string name="proxy-Bitmap (disabled)">""</string>
+              <string name="proxy-Label">""</string>
+              <string name="proxy-Kind">"Check"</string>
+              <bool name="proxy-Enabled">1</bool>
+              <string name="proxy-Tooltip">"Show bone names"</string>
               <string name="proxy-Help text">""</string>
               <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
             </document>
@@ -903,7 +1278,7 @@
               <string name="proxy-Member variable name">""</string>
               <string name="proxy-Orientation">"Horizontal"</string>
               <long name="proxy-Sash position">150</long>
-              <long name="proxy-Minimum pane size">100</long>
+              <long name="proxy-Minimum pane size">150</long>
               <double name="proxy-Gravity">0</double>
               <string name="proxy-Help text">""</string>
               <string name="proxy-Tooltip text">""</string>
@@ -1172,7 +1547,7 @@
                       <string name="proxy-Label">" X "</string>
                       <long name="proxy-Wrapping width">-1</long>
                       <string name="proxy-Help text">""</string>
-                      <string name="proxy-Tooltip text">""</string>
+                      <string name="proxy-Tooltip text">"Close panel"</string>
                       <string name="proxy-Background colour">"000000"</string>
                       <string name="proxy-Foreground colour">"FFFFFF"</string>
                       <string name="proxy-Font">"8, wxSWISS, wxNORMAL, wxBOLD, false, Tahoma"</string>
@@ -1462,7 +1837,7 @@
                           <bool name="proxy-wxLEFT">1</bool>
                           <bool name="proxy-wxRIGHT">1</bool>
                           <bool name="proxy-wxTOP">1</bool>
-                          <bool name="proxy-wxBOTTOM">1</bool>
+                          <bool name="proxy-wxBOTTOM">0</bool>
                           <bool name="proxy-wxSHAPED">0</bool>
                           <bool name="proxy-wxADJUST_MINSIZE">0</bool>
                           <bool name="proxy-wxFIXED_MINSIZE">0</bool>
@@ -1496,7 +1871,7 @@
                           <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
                         </document>
                         <document>
-                          <string name="title">"wxTextCtrl: ID_TEXTCTRL1"</string>
+                          <string name="title">"wxTextCtrl: ID_MESHNAME"</string>
                           <string name="type">"dialog-control-document"</string>
                           <string name="filename">""</string>
                           <string name="icon-name">"textctrl"</string>
@@ -1506,7 +1881,7 @@
                           <long name="locked">0</long>
                           <string name="created">"24/12/2007"</string>
                           <string name="proxy-type">"wbTextCtrlProxy"</string>
-                          <string name="proxy-Id name">"ID_TEXTCTRL1"</string>
+                          <string name="proxy-Id name">"ID_MESHNAME"</string>
                           <long name="proxy-Id value">10013</long>
                           <string name="proxy-Name">""</string>
                           <string name="proxy-Class">"wxTextCtrl"</string>
@@ -1537,7 +1912,7 @@
                           <bool name="proxy-wxTE_PROCESS_ENTER">0</bool>
                           <bool name="proxy-wxTE_PROCESS_TAB">0</bool>
                           <bool name="proxy-wxTE_PASSWORD">0</bool>
-                          <bool name="proxy-wxTE_READONLY">0</bool>
+                          <bool name="proxy-wxTE_READONLY">1</bool>
                           <bool name="proxy-wxTE_RICH">0</bool>
                           <bool name="proxy-wxTE_RICH2">0</bool>
                           <bool name="proxy-wxTE_AUTO_URL">0</bool>
@@ -1567,7 +1942,7 @@
                           <string name="proxy-AlignV">"Centre"</string>
                           <long name="proxy-Stretch factor">1</long>
                           <long name="proxy-Border">5</long>
-                          <bool name="proxy-wxLEFT">1</bool>
+                          <bool name="proxy-wxLEFT">0</bool>
                           <bool name="proxy-wxRIGHT">0</bool>
                           <bool name="proxy-wxTOP">1</bool>
                           <bool name="proxy-wxBOTTOM">1</bool>
@@ -1578,7 +1953,7 @@
                           <string name="proxy-Custom ctor arguments">""</string>
                         </document>
                         <document>
-                          <string name="title">"wxButton: ID_OPENMESH"</string>
+                          <string name="title">"wxButton: ID_MESHOPEN"</string>
                           <string name="type">"dialog-control-document"</string>
                           <string name="filename">""</string>
                           <string name="icon-name">"dialogcontrol"</string>
@@ -1588,8 +1963,8 @@
                           <long name="locked">0</long>
                           <string name="created">"24/12/2007"</string>
                           <string name="proxy-type">"wbButtonProxy"</string>
-                          <string name="proxy-Id name">"ID_OPENMESH"</string>
-                          <long name="proxy-Id value">10029</long>
+                          <string name="proxy-Id name">"ID_MESHOPEN"</string>
+                          <long name="proxy-Id value">10044</long>
                           <string name="proxy-Name">""</string>
                           <string name="proxy-Class">"wxButton"</string>
                           <string name="proxy-Base class">"wxButton"</string>
@@ -1601,7 +1976,7 @@
                           <string name="proxy-Label">"..."</string>
                           <bool name="proxy-Default">0</bool>
                           <string name="proxy-Help text">""</string>
-                          <string name="proxy-Tooltip text">""</string>
+                          <string name="proxy-Tooltip text">"Open mesh file"</string>
                           <string name="proxy-Data variable">""</string>
                           <string name="proxy-Data validator">""</string>
                           <string name="proxy-Data source">""</string>
@@ -1627,14 +2002,14 @@
                           <string name="proxy-Custom styles">""</string>
                           <long name="proxy-X">-1</long>
                           <long name="proxy-Y">-1</long>
-                          <long name="proxy-Width">20</long>
-                          <long name="proxy-Height">-1</long>
+                          <long name="proxy-Width">18</long>
+                          <long name="proxy-Height">18</long>
                           <string name="proxy-AlignH">"Centre"</string>
                           <string name="proxy-AlignV">"Centre"</string>
                           <long name="proxy-Stretch factor">0</long>
                           <long name="proxy-Border">5</long>
-                          <bool name="proxy-wxLEFT">0</bool>
-                          <bool name="proxy-wxRIGHT">1</bool>
+                          <bool name="proxy-wxLEFT">1</bool>
+                          <bool name="proxy-wxRIGHT">0</bool>
                           <bool name="proxy-wxTOP">1</bool>
                           <bool name="proxy-wxBOTTOM">1</bool>
                           <bool name="proxy-wxSHAPED">0</bool>
@@ -1735,7 +2110,7 @@
                         <string name="proxy-Member variable name">""</string>
                         <string name="proxy-AlignH">"Centre"</string>
                         <string name="proxy-AlignV">"Centre"</string>
-                        <long name="proxy-Stretch factor">0</long>
+                        <long name="proxy-Stretch factor">1</long>
                         <long name="proxy-Border">5</long>
                         <bool name="proxy-wxLEFT">1</bool>
                         <bool name="proxy-wxRIGHT">1</bool>
@@ -1745,6 +2120,351 @@
                         <bool name="proxy-wxADJUST_MINSIZE">0</bool>
                         <bool name="proxy-wxFIXED_MINSIZE">0</bool>
                         <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+                        <document>
+                          <string name="title">"wxFlexGridSizer"</string>
+                          <string name="type">"dialog-control-document"</string>
+                          <string name="filename">""</string>
+                          <string name="icon-name">"sizer"</string>
+                          <long name="is-transient">0</long>
+                          <long name="owns-file">1</long>
+                          <long name="title-mode">0</long>
+                          <long name="locked">0</long>
+                          <string name="created">"9/1/2008"</string>
+                          <string name="proxy-type">"wbFlexGridSizerProxy"</string>
+                          <string name="proxy-GrowableColumns">"0"</string>
+                          <string name="proxy-GrowableRows">""</string>
+                          <long name="proxy-Columns">2</long>
+                          <long name="proxy-Rows">2</long>
+                          <long name="proxy-ColumnSpacing">0</long>
+                          <long name="proxy-RowSpacing">0</long>
+                          <string name="proxy-Member variable name">""</string>
+                          <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+                          <string name="proxy-AlignH">"Expand"</string>
+                          <string name="proxy-AlignV">"Centre"</string>
+                          <long name="proxy-Stretch factor">0</long>
+                          <long name="proxy-Border">5</long>
+                          <bool name="proxy-wxLEFT">0</bool>
+                          <bool name="proxy-wxRIGHT">0</bool>
+                          <bool name="proxy-wxTOP">0</bool>
+                          <bool name="proxy-wxBOTTOM">0</bool>
+                          <bool name="proxy-wxSHAPED">0</bool>
+                          <bool name="proxy-wxADJUST_MINSIZE">0</bool>
+                          <bool name="proxy-wxFIXED_MINSIZE">0</bool>
+                          <document>
+                            <string name="title">"wxStaticText: wxID_STATIC"</string>
+                            <string name="type">"dialog-control-document"</string>
+                            <string name="filename">""</string>
+                            <string name="icon-name">"statictext"</string>
+                            <long name="is-transient">0</long>
+                            <long name="owns-file">1</long>
+                            <long name="title-mode">0</long>
+                            <long name="locked">0</long>
+                            <string name="created">"9/1/2008"</string>
+                            <string name="proxy-type">"wbStaticTextProxy"</string>
+                            <string name="proxy-Id name">"wxID_STATIC"</string>
+                            <long name="proxy-Id value">5105</long>
+                            <string name="proxy-Name">""</string>
+                            <string name="proxy-Class">"wxStaticText"</string>
+                            <string name="proxy-Base class">"wxStaticText"</string>
+                            <bool name="proxy-External implementation">1</bool>
+                            <bool name="proxy-Separate files">0</bool>
+                            <string name="proxy-Implementation filename">""</string>
+                            <string name="proxy-Header filename">""</string>
+                            <string name="proxy-Member variable name">""</string>
+                            <string name="proxy-Label">"AnimSet"</string>
+                            <long name="proxy-Wrapping width">-1</long>
+                            <string name="proxy-Help text">""</string>
+                            <string name="proxy-Tooltip text">""</string>
+                            <string name="proxy-Background colour">""</string>
+                            <string name="proxy-Foreground colour">""</string>
+                            <string name="proxy-Font">""</string>
+                            <bool name="proxy-Hidden">0</bool>
+                            <bool name="proxy-Enabled">1</bool>
+                            <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+                            <string name="proxy-Data variable">""</string>
+                            <string name="proxy-Data validator">""</string>
+                            <string name="proxy-Data source">""</string>
+                            <string name="proxy-Data class name">""</string>
+                            <string name="proxy-Data class implementation filename">""</string>
+                            <string name="proxy-Data class header filename">""</string>
+                            <string name="proxy-Data class manager window">""</string>
+                            <bool name="proxy-wxALIGN_LEFT">0</bool>
+                            <bool name="proxy-wxALIGN_RIGHT">0</bool>
+                            <bool name="proxy-wxALIGN_CENTRE">0</bool>
+                            <bool name="proxy-wxST_NO_AUTORESIZE">0</bool>
+                            <bool name="proxy-wxNO_BORDER">0</bool>
+                            <bool name="proxy-wxSIMPLE_BORDER">0</bool>
+                            <bool name="proxy-wxDOUBLE_BORDER">0</bool>
+                            <bool name="proxy-wxSUNKEN_BORDER">0</bool>
+                            <bool name="proxy-wxRAISED_BORDER">0</bool>
+                            <bool name="proxy-wxSTATIC_BORDER">0</bool>
+                            <bool name="proxy-wxWANTS_CHARS">0</bool>
+                            <bool name="proxy-wxNO_FULL_REPAINT_ON_RESIZE">0</bool>
+                            <bool name="proxy-wxFULL_REPAINT_ON_RESIZE">0</bool>
+                            <string name="proxy-Custom styles">""</string>
+                            <long name="proxy-X">-1</long>
+                            <long name="proxy-Y">-1</long>
+                            <long name="proxy-Width">-1</long>
+                            <long name="proxy-Height">-1</long>
+                            <string name="proxy-AlignH">"Left"</string>
+                            <string name="proxy-AlignV">"Bottom"</string>
+                            <long name="proxy-Stretch factor">0</long>
+                            <long name="proxy-Border">5</long>
+                            <bool name="proxy-wxLEFT">1</bool>
+                            <bool name="proxy-wxRIGHT">1</bool>
+                            <bool name="proxy-wxTOP">1</bool>
+                            <bool name="proxy-wxBOTTOM">0</bool>
+                            <bool name="proxy-wxSHAPED">0</bool>
+                            <bool name="proxy-wxADJUST_MINSIZE">0</bool>
+                            <bool name="proxy-wxFIXED_MINSIZE">0</bool>
+                            <string name="proxy-Custom arguments">""</string>
+                            <string name="proxy-Custom ctor arguments">""</string>
+                          </document>
+                          <document>
+                            <string name="title">"Spacer"</string>
+                            <string name="type">"dialog-control-document"</string>
+                            <string name="filename">""</string>
+                            <string name="icon-name">"spacer"</string>
+                            <long name="is-transient">0</long>
+                            <long name="owns-file">1</long>
+                            <long name="title-mode">0</long>
+                            <long name="locked">0</long>
+                            <string name="created">"9/1/2008"</string>
+                            <string name="proxy-type">"wbSpacerProxy"</string>
+                            <long name="proxy-Width">5</long>
+                            <long name="proxy-Height">5</long>
+                            <string name="proxy-AlignH">"Centre"</string>
+                            <string name="proxy-AlignV">"Centre"</string>
+                            <long name="proxy-Stretch factor">0</long>
+                            <long name="proxy-Border">5</long>
+                            <bool name="proxy-wxLEFT">1</bool>
+                            <bool name="proxy-wxRIGHT">1</bool>
+                            <bool name="proxy-wxTOP">1</bool>
+                            <bool name="proxy-wxBOTTOM">1</bool>
+                            <bool name="proxy-wxSHAPED">0</bool>
+                            <bool name="proxy-wxADJUST_MINSIZE">0</bool>
+                            <bool name="proxy-wxFIXED_MINSIZE">0</bool>
+                            <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+                          </document>
+                          <document>
+                            <string name="title">"wxTextCtrl: ID_ANIMNAME"</string>
+                            <string name="type">"dialog-control-document"</string>
+                            <string name="filename">""</string>
+                            <string name="icon-name">"textctrl"</string>
+                            <long name="is-transient">0</long>
+                            <long name="owns-file">1</long>
+                            <long name="title-mode">0</long>
+                            <long name="locked">0</long>
+                            <string name="created">"9/1/2008"</string>
+                            <string name="proxy-type">"wbTextCtrlProxy"</string>
+                            <string name="proxy-Id name">"ID_ANIMNAME"</string>
+                            <long name="proxy-Id value">10006</long>
+                            <string name="proxy-Name">""</string>
+                            <string name="proxy-Class">"wxTextCtrl"</string>
+                            <string name="proxy-Base class">"wxTextCtrl"</string>
+                            <bool name="proxy-External implementation">1</bool>
+                            <bool name="proxy-Separate files">0</bool>
+                            <string name="proxy-Implementation filename">""</string>
+                            <string name="proxy-Header filename">""</string>
+                            <string name="proxy-Member variable name">""</string>
+                            <string name="proxy-Initial value">""</string>
+                            <long name="proxy-Max length">0</long>
+                            <string name="proxy-Help text">""</string>
+                            <string name="proxy-Tooltip text">""</string>
+                            <string name="proxy-Background colour">""</string>
+                            <string name="proxy-Foreground colour">""</string>
+                            <string name="proxy-Font">""</string>
+                            <bool name="proxy-Hidden">0</bool>
+                            <bool name="proxy-Enabled">1</bool>
+                            <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+                            <string name="proxy-Data variable">""</string>
+                            <string name="proxy-Data validator">""</string>
+                            <string name="proxy-Data source">""</string>
+                            <string name="proxy-Data class name">""</string>
+                            <string name="proxy-Data class implementation filename">""</string>
+                            <string name="proxy-Data class header filename">""</string>
+                            <string name="proxy-Data class manager window">""</string>
+                            <bool name="proxy-wxTE_MULTILINE">0</bool>
+                            <bool name="proxy-wxTE_PROCESS_ENTER">0</bool>
+                            <bool name="proxy-wxTE_PROCESS_TAB">0</bool>
+                            <bool name="proxy-wxTE_PASSWORD">0</bool>
+                            <bool name="proxy-wxTE_READONLY">1</bool>
+                            <bool name="proxy-wxTE_RICH">0</bool>
+                            <bool name="proxy-wxTE_RICH2">0</bool>
+                            <bool name="proxy-wxTE_AUTO_URL">0</bool>
+                            <bool name="proxy-wxTE_NOHIDESEL">0</bool>
+                            <bool name="proxy-wxTE_LEFT">0</bool>
+                            <bool name="proxy-wxTE_CENTRE">0</bool>
+                            <bool name="proxy-wxTE_RIGHT">0</bool>
+                            <bool name="proxy-wxHSCROLL">0</bool>
+                            <bool name="proxy-wxTE_CHARWRAP">0</bool>
+                            <bool name="proxy-wxTE_WORDWRAP">0</bool>
+                            <bool name="proxy-wxTE_CAPITALIZE">0</bool>
+                            <bool name="proxy-wxNO_BORDER">0</bool>
+                            <bool name="proxy-wxSIMPLE_BORDER">0</bool>
+                            <bool name="proxy-wxDOUBLE_BORDER">0</bool>
+                            <bool name="proxy-wxSUNKEN_BORDER">0</bool>
+                            <bool name="proxy-wxRAISED_BORDER">0</bool>
+                            <bool name="proxy-wxSTATIC_BORDER">0</bool>
+                            <bool name="proxy-wxWANTS_CHARS">0</bool>
+                            <bool name="proxy-wxNO_FULL_REPAINT_ON_RESIZE">0</bool>
+                            <bool name="proxy-wxFULL_REPAINT_ON_RESIZE">0</bool>
+                            <string name="proxy-Custom styles">""</string>
+                            <long name="proxy-X">-1</long>
+                            <long name="proxy-Y">-1</long>
+                            <long name="proxy-Width">-1</long>
+                            <long name="proxy-Height">-1</long>
+                            <string name="proxy-AlignH">"Expand"</string>
+                            <string name="proxy-AlignV">"Centre"</string>
+                            <long name="proxy-Stretch factor">1</long>
+                            <long name="proxy-Border">5</long>
+                            <bool name="proxy-wxLEFT">0</bool>
+                            <bool name="proxy-wxRIGHT">0</bool>
+                            <bool name="proxy-wxTOP">1</bool>
+                            <bool name="proxy-wxBOTTOM">1</bool>
+                            <bool name="proxy-wxSHAPED">0</bool>
+                            <bool name="proxy-wxADJUST_MINSIZE">0</bool>
+                            <bool name="proxy-wxFIXED_MINSIZE">0</bool>
+                            <string name="proxy-Custom arguments">""</string>
+                            <string name="proxy-Custom ctor arguments">""</string>
+                          </document>
+                          <document>
+                            <string name="title">"wxButton: ID_ANIMOPEN"</string>
+                            <string name="type">"dialog-control-document"</string>
+                            <string name="filename">""</string>
+                            <string name="icon-name">"dialogcontrol"</string>
+                            <long name="is-transient">0</long>
+                            <long name="owns-file">1</long>
+                            <long name="title-mode">0</long>
+                            <long name="locked">0</long>
+                            <string name="created">"9/1/2008"</string>
+                            <string name="proxy-type">"wbButtonProxy"</string>
+                            <string name="proxy-Id name">"ID_ANIMOPEN"</string>
+                            <long name="proxy-Id value">10046</long>
+                            <string name="proxy-Name">""</string>
+                            <string name="proxy-Class">"wxButton"</string>
+                            <string name="proxy-Base class">"wxButton"</string>
+                            <bool name="proxy-External implementation">1</bool>
+                            <bool name="proxy-Separate files">0</bool>
+                            <string name="proxy-Implementation filename">""</string>
+                            <string name="proxy-Header filename">""</string>
+                            <string name="proxy-Member variable name">""</string>
+                            <string name="proxy-Label">"..."</string>
+                            <bool name="proxy-Default">0</bool>
+                            <string name="proxy-Help text">""</string>
+                            <string name="proxy-Tooltip text">"Open animation file"</string>
+                            <string name="proxy-Data variable">""</string>
+                            <string name="proxy-Data validator">""</string>
+                            <string name="proxy-Data source">""</string>
+                            <string name="proxy-Data class name">""</string>
+                            <string name="proxy-Data class implementation filename">""</string>
+                            <string name="proxy-Data class header filename">""</string>
+                            <string name="proxy-Data class manager window">""</string>
+                            <string name="proxy-Background colour">""</string>
+                            <string name="proxy-Foreground colour">""</string>
+                            <string name="proxy-Font">""</string>
+                            <bool name="proxy-Hidden">0</bool>
+                            <bool name="proxy-Enabled">1</bool>
+                            <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+                            <bool name="proxy-wxBU_LEFT">0</bool>
+                            <bool name="proxy-wxBU_RIGHT">0</bool>
+                            <bool name="proxy-wxBU_TOP">0</bool>
+                            <bool name="proxy-wxBU_BOTTOM">0</bool>
+                            <bool name="proxy-wxBU_EXACTFIT">0</bool>
+                            <bool name="proxy-wxNO_BORDER">0</bool>
+                            <bool name="proxy-wxWANTS_CHARS">0</bool>
+                            <bool name="proxy-wxNO_FULL_REPAINT_ON_RESIZE">0</bool>
+                            <bool name="proxy-wxFULL_REPAINT_ON_RESIZE">0</bool>
+                            <string name="proxy-Custom styles">""</string>
+                            <long name="proxy-X">-1</long>
+                            <long name="proxy-Y">-1</long>
+                            <long name="proxy-Width">18</long>
+                            <long name="proxy-Height">18</long>
+                            <string name="proxy-AlignH">"Centre"</string>
+                            <string name="proxy-AlignV">"Centre"</string>
+                            <long name="proxy-Stretch factor">0</long>
+                            <long name="proxy-Border">5</long>
+                            <bool name="proxy-wxLEFT">1</bool>
+                            <bool name="proxy-wxRIGHT">0</bool>
+                            <bool name="proxy-wxTOP">1</bool>
+                            <bool name="proxy-wxBOTTOM">1</bool>
+                            <bool name="proxy-wxSHAPED">0</bool>
+                            <bool name="proxy-wxADJUST_MINSIZE">0</bool>
+                            <bool name="proxy-wxFIXED_MINSIZE">0</bool>
+                            <string name="proxy-Custom arguments">""</string>
+                            <string name="proxy-Custom ctor arguments">""</string>
+                          </document>
+                          <document>
+                            <string name="title">"wxStaticText: wxID_STATIC"</string>
+                            <string name="type">"dialog-control-document"</string>
+                            <string name="filename">""</string>
+                            <string name="icon-name">"statictext"</string>
+                            <long name="is-transient">0</long>
+                            <long name="owns-file">1</long>
+                            <long name="title-mode">0</long>
+                            <long name="locked">0</long>
+                            <string name="created">"10/1/2008"</string>
+                            <string name="proxy-type">"wbStaticTextProxy"</string>
+                            <string name="proxy-Id name">"wxID_STATIC"</string>
+                            <long name="proxy-Id value">5105</long>
+                            <string name="proxy-Name">""</string>
+                            <string name="proxy-Class">"wxStaticText"</string>
+                            <string name="proxy-Base class">"wxStaticText"</string>
+                            <bool name="proxy-External implementation">1</bool>
+                            <bool name="proxy-Separate files">0</bool>
+                            <string name="proxy-Implementation filename">""</string>
+                            <string name="proxy-Header filename">""</string>
+                            <string name="proxy-Member variable name">""</string>
+                            <string name="proxy-Label">"Animation sequences"</string>
+                            <long name="proxy-Wrapping width">-1</long>
+                            <string name="proxy-Help text">""</string>
+                            <string name="proxy-Tooltip text">""</string>
+                            <string name="proxy-Background colour">""</string>
+                            <string name="proxy-Foreground colour">""</string>
+                            <string name="proxy-Font">""</string>
+                            <bool name="proxy-Hidden">0</bool>
+                            <bool name="proxy-Enabled">1</bool>
+                            <string name="proxy-Platform">"&lt;Any platform&gt;"</string>
+                            <string name="proxy-Data variable">""</string>
+                            <string name="proxy-Data validator">""</string>
+                            <string name="proxy-Data source">""</string>
+                            <string name="proxy-Data class name">""</string>
+                            <string name="proxy-Data class implementation filename">""</string>
+                            <string name="proxy-Data class header filename">""</string>
+                            <string name="proxy-Data class manager window">""</string>
+                            <bool name="proxy-wxALIGN_LEFT">0</bool>
+                            <bool name="proxy-wxALIGN_RIGHT">0</bool>
+                            <bool name="proxy-wxALIGN_CENTRE">0</bool>
+                            <bool name="proxy-wxST_NO_AUTORESIZE">0</bool>
+                            <bool name="proxy-wxNO_BORDER">0</bool>
+                            <bool name="proxy-wxSIMPLE_BORDER">0</bool>
+                            <bool name="proxy-wxDOUBLE_BORDER">0</bool>
+                            <bool name="proxy-wxSUNKEN_BORDER">0</bool>
+                            <bool name="proxy-wxRAISED_BORDER">0</bool>
+                            <bool name="proxy-wxSTATIC_BORDER">0</bool>
+                            <bool name="proxy-wxWANTS_CHARS">0</bool>
+                            <bool name="proxy-wxNO_FULL_REPAINT_ON_RESIZE">0</bool>
+                            <bool name="proxy-wxFULL_REPAINT_ON_RESIZE">0</bool>
+                            <string name="proxy-Custom styles">""</string>
+                            <long name="proxy-X">-1</long>
+                            <long name="proxy-Y">-1</long>
+                            <long name="proxy-Width">-1</long>
+                            <long name="proxy-Height">-1</long>
+                            <string name="proxy-AlignH">"Left"</string>
+                            <string name="proxy-AlignV">"Centre"</string>
+                            <long name="proxy-Stretch factor">0</long>
+                            <long name="proxy-Border">5</long>
+                            <bool name="proxy-wxLEFT">1</bool>
+                            <bool name="proxy-wxRIGHT">1</bool>
+                            <bool name="proxy-wxTOP">1</bool>
+                            <bool name="proxy-wxBOTTOM">0</bool>
+                            <bool name="proxy-wxSHAPED">0</bool>
+                            <bool name="proxy-wxADJUST_MINSIZE">0</bool>
+                            <bool name="proxy-wxFIXED_MINSIZE">0</bool>
+                            <string name="proxy-Custom arguments">""</string>
+                            <string name="proxy-Custom ctor arguments">""</string>
+                          </document>
+                        </document>
                         <document>
                           <string name="title">"wxListBox: ID_ANIMLIST"</string>
                           <string name="type">"dialog-control-document"</string>
@@ -1808,10 +2528,10 @@
                           <string name="proxy-AlignV">"Centre"</string>
                           <long name="proxy-Stretch factor">1</long>
                           <long name="proxy-Border">5</long>
-                          <bool name="proxy-wxLEFT">1</bool>
-                          <bool name="proxy-wxRIGHT">1</bool>
+                          <bool name="proxy-wxLEFT">0</bool>
+                          <bool name="proxy-wxRIGHT">0</bool>
                           <bool name="proxy-wxTOP">1</bool>
-                          <bool name="proxy-wxBOTTOM">1</bool>
+                          <bool name="proxy-wxBOTTOM">0</bool>
                           <bool name="proxy-wxSHAPED">0</bool>
                           <bool name="proxy-wxADJUST_MINSIZE">0</bool>
                           <bool name="proxy-wxFIXED_MINSIZE">0</bool>
@@ -2040,7 +2760,7 @@
                       <string name="proxy-Label">" X "</string>
                       <long name="proxy-Wrapping width">-1</long>
                       <string name="proxy-Help text">""</string>
-                      <string name="proxy-Tooltip text">""</string>
+                      <string name="proxy-Tooltip text">"Close panel"</string>
                       <string name="proxy-Background colour">"000000"</string>
                       <string name="proxy-Foreground colour">"FFFFFF"</string>
                       <string name="proxy-Font">"8, wxSWISS, wxNORMAL, wxBOLD, false, Tahoma"</string>

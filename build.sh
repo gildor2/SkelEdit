@@ -2,10 +2,17 @@
 
 project="Test.project"
 makefile="makefile.mak"
+resfile="resource.bin"
+
+# compile scripts
+Tools/ucc --type=typeinfo.bin Core Anim Editor || exit
+
+# build resources archive
+rm -rf $resfile > /dev/null
+pkzipc -add $resfile -lev=9 -nozip xrc/*.png xrc/*.xrc > /dev/null
 
 # update makefile when needed
-# [ $makefile -ot $project ] &&
-	Tools/genmake $project TARGET=vc-win32 > $makefile
+Tools/genmake $project TARGET=vc-win32 > $makefile
 
 # build
 vc32tools --version=8 --make $makefile
