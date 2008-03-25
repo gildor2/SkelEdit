@@ -15,6 +15,9 @@
 #undef M_PI
 
 
+#define RIPOSTE_COORDS		1			// Y=up, 1 unit ~ 1 meter etc
+
+
 // forwards
 class CArchive;
 class CMemoryChain;
@@ -42,10 +45,12 @@ template<class T> inline void Exchange(T& A, T& B)
 	B = tmp;
 }
 
+#if !RIPOSTE
 template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*, const T*))
 {
 	qsort(array, count, sizeof(T), (int (*)(const void*, const void*)) cmpFunc);
 }
+#endif
 
 // field offset macros
 // get offset of the field in struc
@@ -68,6 +73,10 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 	}
 
 
+#define EXPAND_BOUNDS(a,minval,maxval)	\
+	if (a < minval) minval = a;			\
+	if (a > maxval) maxval = a;
+
 #define VECTOR_ARG(name)	name[0],name[1],name[2]
 #define ARRAY_ARG(array)	array, sizeof(array)/sizeof(array[0])
 #define ARRAY_COUNT(array)	(sizeof(array)/sizeof(array[0]))
@@ -79,14 +88,26 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 #define BYTES4(a,b,c,d)	((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
 
 
-#define assert(x)	\
-	if (!(x))		\
-	{				\
-		appError("assertion failed: %s\n", #x); \
+#define assert(x)							\
+	if (!(x))								\
+	{										\
+		appError("assertion failed: %s\n"	\
+				 "  file: %s\n"				\
+				 "  function: %s\n"			\
+				 "  line: %d",				\
+				 #x, __FILE__, __FUNCTION__, __LINE__); \
 	}
+
+#ifdef RETAIL
+// RETAIL build of game engine
+//?? change macro?
+#undef assert
+#define assert(x)
+#endif
 
 
 #define M_PI				(3.14159265358979323846)
+#define BIG_NUMBER			0x1000000
 
 
 #define min(a,b)  (((a) < (b)) ? (a) : (b))
@@ -100,11 +121,30 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 
 
 #if _MSC_VER
+
 #	define vsnprintf		_vsnprintf
 #	define FORCEINLINE		__forceinline
 #	define NORETURN			__declspec(noreturn)
 	// disable some warnings
+#	pragma warning(disable : 4018)			// signed/unsigned mismatch
+#	pragma warning(disable : 4127)			// conditional expression is constant
+#	pragma warning(disable : 4244)			// conversion from 'int'/'double' to 'float'
+//#	pragma warning(disable : 4251)			// class 'Name' needs to have dll-interface to be used by clients of class 'Class'
 #	pragma warning(disable : 4291)			// no matched operator delete found
+#	pragma warning(disable : 4305)			// truncation from 'const double' to 'const float'
+
+#	if _MSC_VER >= 1300
+#		define NOINLINE			__declspec(noinline)
+#	else
+#		define NOINLINE						// no way ...
+#	endif
+
+#endif
+
+#ifndef _XBOX
+#	define LITTLE_ENDIAN	1
+#else
+#	define LITTLE_ENDIAN	0
 #endif
 
 // necessary types
@@ -124,13 +164,6 @@ typedef unsigned short		word;
 #define S_WHITE			"^7"
 
 
-union color_t
-{
-	byte	c[4];
-	unsigned rgba;
-};
-
-
 void appPrintf(const char *fmt, ...);
 void appError(char *fmt, ...);
 
@@ -139,6 +172,8 @@ void appSetNotifyHeader(const char *fmt, ...);
 void appNotify(char *fmt, ...);
 
 void* LoadFile(const char* filename);
+
+void appInit();
 
 
 // Output device
@@ -170,7 +205,10 @@ extern COutputDevice	*GNull;			// do not output
 -----------------------------------------------------------------------------*/
 
 void* appMalloc(int size);
+void* appRealloc(void *ptr, int size);
 void  appFree(void *ptr);
+
+#if !RIPOSTE
 
 FORCEINLINE void* operator new(size_t size)
 {
@@ -187,6 +225,8 @@ FORCEINLINE void operator delete(void* ptr)
 	appFree(ptr);
 }
 
+#endif
+
 #define DEFAULT_ALIGNMENT	8
 #define MEM_CHUNK_SIZE		0x2000		// 8Kb
 
@@ -194,10 +234,17 @@ FORCEINLINE void operator delete(void* ptr)
 class CMemoryChain
 {
 private:
+#if EDITOR
 	CMemoryChain *next;
 	int		size;
 	byte	*data;
 	byte	*end;
+#else
+	// Safe hack to link to rtl::MemChain; MemChain 'operator new' is protected,
+	// so we needs some kind of hack to link CMemoryChain -> MemChain.
+	// Same (or greater) members size than MemChain.
+	byte	dummy[sizeof(size_t) + sizeof(int)];
+#endif
 public:
 	void* Alloc(size_t size, int alignment = DEFAULT_ALIGNMENT);
 	// creating chain
@@ -205,7 +252,7 @@ public:
 	// deleting chain
 	void operator delete(void* ptr);
 	// stats
-	int GetSize();
+	int GetSize() const;
 };
 
 
@@ -223,6 +270,8 @@ FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment
 /*-----------------------------------------------------------------------------
 	Crash helpers
 -----------------------------------------------------------------------------*/
+
+#if EDITOR
 
 // C++excpetion-based guard/unguard system
 #define guard(func)						\
@@ -243,6 +292,15 @@ FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment
 		}								\
 	}
 
+#else
+
+// do not use guards in game engine ...
+#define guard(func)		{
+#define unguard			}
+#define unguardf(msg)	}
+
+#endif
+
 #define guardSlow		guard
 #define unguardSlow		unguard
 #define unguardfSlow	unguardf
@@ -257,8 +315,9 @@ extern char GErrorHistory[2048];
 
 
 /*-----------------------------------------------------------------------------
-	FCompactIndex class for serializing objects in a compactly, mapping
-	small values to fewer bytes.
+	Helper CCompactIndex class for serializing objects in a compactly,
+	mapping small values to fewer bytes. Binary format is compatible with
+	Unreal Engine FCompactIndex.
 -----------------------------------------------------------------------------*/
 
 class CCompactIndex
@@ -295,15 +354,20 @@ public:
 	virtual void Seek(int Pos) = NULL;
 	virtual bool IsEof() = NULL;
 	virtual void Serialize(void *data, int size) = NULL;
+#if LITTLE_ENDIAN
+	FORCEINLINE void ByteOrderSerialize(void *data, int size)
+	{
+		Serialize(data, size);
+	}
+#else
+	void ByteOrderSerialize(void *data, int size);
+#endif
 
 	bool IsStopper()
 	{
 		return ArStopper == ArPos;
 	}
 
-#ifndef _MSC_VER
-#	error Port endian-depending code!
-#endif
 	friend CArchive& operator<<(CArchive &Ar, bool &B)
 	{
 		Ar.Serialize(&B, 1);
@@ -321,29 +385,30 @@ public:
 	}
 	friend CArchive& operator<<(CArchive &Ar, short &B)
 	{
-		Ar.Serialize(&B, 2);
+		Ar.ByteOrderSerialize(&B, 2);
 		return Ar;
 	}
 	friend CArchive& operator<<(CArchive &Ar, word &B)
 	{
-		Ar.Serialize(&B, 2);
+		Ar.ByteOrderSerialize(&B, 2);
 		return Ar;
 	}
 	friend CArchive& operator<<(CArchive &Ar, int &B)
 	{
-		Ar.Serialize(&B, 4);
+		Ar.ByteOrderSerialize(&B, 4);
 		return Ar;
 	}
 	friend CArchive& operator<<(CArchive &Ar, unsigned &B)
 	{
-		Ar.Serialize(&B, 4);
+		Ar.ByteOrderSerialize(&B, 4);
 		return Ar;
 	}
 	friend CArchive& operator<<(CArchive &Ar, float &B)
 	{
-		Ar.Serialize(&B, 4);
+		Ar.ByteOrderSerialize(&B, 4);
 		return Ar;
 	}
+	friend CArchive& operator<<(CArchive &Ar, CObject *&Obj);
 };
 
 void SerializeChars(CArchive &Ar, char *buf, int length);
@@ -352,9 +417,19 @@ void SerializeChars(CArchive &Ar, char *buf, int length);
 	TArray template
 -----------------------------------------------------------------------------*/
 
+/*
+ * NOTES:
+ *	- CArray/TArray should not contain objects with virtual tables (no
+ *	  constructor/destructor support)
+ *	- should not use new[] and delete[] here, because compiler will alloc
+ *	  additional 'count' field for correct delete[], but we uses appMalloc/
+ *	  appFree calls.
+ */
+
 class CArray
 {
-	friend class WPropEdit;		// access protected properties
+	friend class WPropEdit;		// access from editor's PropertyGrid
+	friend class CStruct;		// full access to properties from typeinfo support classes
 
 public:
 	CArray()
@@ -365,7 +440,7 @@ public:
 	~CArray()
 	{
 		if (DataPtr)
-			delete[] DataPtr;
+			appFree(DataPtr);
 		DataPtr   = NULL;
 		DataCount = 0;
 		MaxCount  = 0;
@@ -393,6 +468,13 @@ protected:
 template<class T> class TArray : public CArray
 {
 public:
+	~TArray()
+	{
+		// destruct all array items
+		T *P, *P2;
+		for (P = (T*)DataPtr, P2 = P + DataCount; P < P2; P++)
+			P->~T();
+	}
 	// data accessors
 	T& operator[](int index)
 	{
@@ -419,6 +501,11 @@ public:
 
 	void Remove(int index, int count = 1)
 	{
+		// destruct specified array items
+		T *P, *P2;
+		for (P = (T*)DataPtr + index, P2 = P + count; P < P2; P++)
+			P->~T();
+		// remove items from array
 		CArray::Remove(index, count, sizeof(T));
 	}
 
@@ -445,7 +532,10 @@ public:
 			A.Empty();
 			int Count;
 			Ar << AR_INDEX(Count);
-			Ptr = new T[Count];
+			if (Count)
+				Ptr = (T*)appMalloc(sizeof(T) * Count);
+			else
+				Ptr = NULL;
 			A.DataPtr   = Ptr;
 			A.DataCount = Count;
 			A.MaxCount  = Count;
@@ -464,13 +554,24 @@ public:
 };
 
 
+template<class T> FORCEINLINE void* operator new(size_t size, TArray<T> &Array)
+{
+	guard(TArray::operator new);
+	assert(size == sizeof(T));
+	int index = Array.Add(1);
+	return &Array[index];
+	unguard;
+}
 
 
 #include "Strings.h"
 #include "Math3D.h"
 #include "Commands.h"
 #include "ScriptParser.h"
+#include "CoreTypeinfo.h"
 #include "Object.h"
+
+typedef CVec3 CColor3f;
 
 
 extern TString<128> GRootDir;

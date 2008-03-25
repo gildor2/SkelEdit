@@ -3,18 +3,26 @@
 #include "GLCanvas.h"
 
 #include "GlViewport.h"
+#include "Gizmo.h"
 
 
 GLCanvas::GLCanvas(wxWindow *parent)
 :	wxGLCanvas(parent, wxID_ANY, NULL, wxDefaultPosition, wxDefaultSize, wxSUNKEN_BORDER)
-,	mMouseLeft(false)
-,	mMouseRight(false)
-,	mMouseMid(false)
+,	m_mouseLeft(false)
+,	m_mouseRight(false)
+,	m_mouseMid(false)
 {
-	mContext = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
-	SetCurrent(*mContext);
+	m_context = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
+	SetCurrent(*m_context);
 	GL::ResetView();
 }
+
+
+GLCanvas::~GLCanvas()
+{
+	delete m_context;
+}
+
 
 void GLCanvas::Render()
 {}
@@ -43,40 +51,52 @@ void GLCanvas::OnEraseBackground(wxEraseEvent &event)
 
 void GLCanvas::OnMouse(wxMouseEvent &event)
 {
-	bool prevMouseDown = mMouseLeft | mMouseRight | mMouseMid;
+	bool prevMouseDown = m_mouseLeft | m_mouseRight | m_mouseMid;
 
 	// update button states
 	bool left  = event.LeftIsDown();
 	bool right = event.RightIsDown();
 	bool mid   = event.MiddleIsDown();
-	if (left != mMouseLeft)
+
+	int deltaX = event.m_x - m_mouseX;
+	int deltaY = event.m_y - m_mouseY;
+
+	// ignore mouse movement when button state changed
+	if (left != m_mouseLeft || right != m_mouseRight || mid != m_mouseMid)
+		deltaX = deltaY = 0;
+
+	// mouse hook
+	bool process = !ProcessMouse(left, right, event.m_x, event.m_y, deltaX, deltaY);
+
+	// rotate/move camera
+	if (left != m_mouseLeft)
 	{
-		mMouseLeft = left;
-		GL::OnMouseButton(left, MOUSE_LEFT);
+		m_mouseLeft = left;
+		if (process) GL::OnMouseButton(left, MOUSE_LEFT);
 	}
-	if (right != mMouseRight)
+	if (right != m_mouseRight)
 	{
-		mMouseRight = right;
-		GL::OnMouseButton(right, MOUSE_RIGHT);
+		m_mouseRight = right;
+		if (process) GL::OnMouseButton(right, MOUSE_RIGHT);
 	}
-	if (mid != mMouseMid)
+	if (mid != m_mouseMid)
 	{
-		mMouseMid = mid;
-		GL::OnMouseButton(mid, MOUSE_MIDDLE);
+		m_mouseMid = mid;
+		if (process) GL::OnMouseButton(mid, MOUSE_MIDDLE);
 	}
-	bool mouseDown = mMouseLeft | mMouseRight | mMouseMid;
+	bool mouseDown = m_mouseLeft | m_mouseRight | m_mouseMid;
 
 	// process mouse position
 	if (!prevMouseDown)
 	{
-		mMouseX = event.m_x;
-		mMouseY = event.m_y;
+		m_mouseX = event.m_x;
+		m_mouseY = event.m_y;
 	}
 	else if (mouseDown)
 	{
 		// dragging with one of mouse buttons
 		// set mouse cursor position to last non-draw position
-		WarpPointer(mMouseX, mMouseY);
+		WarpPointer(m_mouseX, m_mouseY);
 	}
 	// show/hide cursor
 	/* Win32 has some bugs with changing cursor:
@@ -106,7 +126,8 @@ void GLCanvas::OnMouse(wxMouseEvent &event)
 	}
 
 	// update movement
-	GL::OnMouseMove(event.m_x - mMouseX, event.m_y - mMouseY);
+	if (process) GL::OnMouseMove(deltaX, deltaY);
+
 	//?? if OnIdle() viewport update disabled, may call Refresh() here
 	//?? when view origin changed
 }

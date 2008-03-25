@@ -56,6 +56,11 @@ public:
 		return size == pos;
 	}
 
+	bool IsOpen()
+	{
+		return f != NULL;
+	}
+
 protected:
 	FILE	*f;
 	virtual void Serialize(void *data, int size)

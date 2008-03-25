@@ -2,8 +2,13 @@
 
 #include "AnimClasses.h"
 #include "Import.h"
-#include "ImportPsk.h"
+#include "Psk.h"
 #include "AnimCompression.h"
+
+
+// It seems, ActorX for Maya does not initialize VQuatAnimKey.Time field at
+// all, so we should use fixed timestep of 1.0
+#define FIXED_FRAME_TIME			1
 
 
 /*-----------------------------------------------------------------------------
@@ -99,13 +104,123 @@ static int SortInfluences(const CWeightInfo *const W1, const CWeightInfo *const 
 static void TrimSpaces(char *Str)
 {
 	// trim trailing spaces
-	for (int i = strlen(Str)-1; i >= 0; i--)
-	{
-		if (Str[i] == ' ')
-			Str[i] = 0;
+	for (char *s = strchr(Str, 0) - 1; s >= Str; s--)
+		if (*s == ' ')
+			*s = 0;
 		else
 			break;
+}
+
+
+// generate bounding boxes for each bone (some may be empty)
+static void ComputeMeshBoxes(CSkeletalMesh &Mesh, CCoords *boxes, bool *boxValid)
+{
+	guard(ComputeMeshBoxes);
+
+	const CSkeletalMeshLod &Lod = Mesh.Lods[0];
+	int boneIdx;
+	int numBones = Mesh.Skeleton.Num();
+
+	// prepare bone bounds and refpose coords
+	CBox	bounds[MAX_MESH_BONES];		// bounds in local coordinate system
+	CCoords	coords[MAX_MESH_BONES];		// local coordinate system
+	for (boneIdx = 0; boneIdx < numBones; boneIdx++)
+	{
+		const CMeshBone &B = Mesh.Skeleton[boneIdx];
+		CCoords &BC = coords[boneIdx];
+		CQuat    BQ = B.Orientation;
+		if (!boneIdx) BQ.Conjugate();
+		// convert bone location to CCoords
+		BC.origin = B.Position;
+		BQ.ToAxis(BC.axis);
+		// attach to parent bone
+		if (boneIdx > 0)
+		{
+			int parentBone = B.ParentIndex;
+			assert(parentBone < boneIdx);
+			coords[parentBone].UnTransformCoords(BC, BC);
+		}
+		// clear bounds
+		bounds[boneIdx].Clear();
 	}
+
+	for (int pointIdx = 0; pointIdx < Lod.Points.Num(); pointIdx++)
+	{
+		const CMeshPoint &P = Lod.Points[pointIdx];
+		// use 1st influence only (most significant)
+		int pointBone = P.Influences[0].BoneIndex;
+		if (pointBone == NO_INFLUENCE) continue;		// should not happen
+		// expand bounds for bone[pointBone]
+		CVec3 v;
+		coords[pointBone].TransformPointSlow(P.Point, v);
+		bounds[pointBone].Expand(v);
+	}
+
+	// convert gathered information to bounding boxes in CCoords form
+	for (boneIdx = 0; boneIdx < numBones; boneIdx++)
+	{
+		const CBox &b = bounds[boneIdx];
+		// validate boudns (should be positive volume)
+		if (b.mins[0] >= b.maxs[0] || b.mins[1] >= b.maxs[1] || b.mins[2] >= b.maxs[2])
+		{
+			boxValid[boneIdx] = false;
+			continue;
+		}
+		// convert bounds to coords
+		const CCoords &BC = coords[boneIdx];
+		CVec3 center;
+		Lerp(b.mins, b.maxs, 0.5f, center);
+		CCoords &HC = boxes[boneIdx];
+		BC.UnTransformPoint(center, HC.origin);
+		HC.axis = BC.axis;
+		for (int i = 0; i < 3; i++)
+			HC.axis[i].Scale(b.maxs[i] - b.mins[i]);
+		// transform coords back to bone coordinate system
+		coords[boneIdx].TransformCoordsSlow(HC, HC);
+		// mark box as valid
+		boxValid[boneIdx] = true;
+	}
+
+	unguard;
+}
+
+
+void GenerateBoxes(CSkeletalMesh &Mesh)
+{
+	guard(GenerateBoxes);
+
+	CCoords boxes[MAX_MESH_BONES];
+	bool    boxValid[MAX_MESH_BONES];
+	ComputeMeshBoxes(Mesh, boxes, boxValid);
+
+	for (int boneIdx = 0; boneIdx < Mesh.Skeleton.Num(); boneIdx++)
+	{
+		if (!boxValid[boneIdx])
+			continue;
+		CMeshHitBox *H = new (Mesh.BoundingBoxes) CMeshHitBox;
+		H->Name      = Mesh.Skeleton[boneIdx].Name;
+		H->BoneIndex = boneIdx;
+		H->Coords    = boxes[boneIdx];
+	}
+	appPrintf("Generated %d hit boxes\n", Mesh.BoundingBoxes.Num());
+
+	unguard;
+}
+
+
+bool GenerateBox(CSkeletalMesh &Mesh, int BoneIndex, CCoords &Box)
+{
+	guard(GenerateBox);
+	CCoords boxes[MAX_MESH_BONES];
+	bool    boxValid[MAX_MESH_BONES];
+	ComputeMeshBoxes(Mesh, boxes, boxValid);
+	if (boxValid[BoneIndex])
+	{
+		Box = boxes[BoneIndex];
+		return true;
+	}
+	return false;
+	unguard;
 }
 
 
@@ -118,13 +233,13 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	 *	Load PSK file
 	 *-------------------------------*/
 
-	// arrays to hold loaded data
-	TArray<CVec3>		Verts;
-	TArray<VVertex>		Wedges;
-	TArray<VTriangle>	Tris;
-	TArray<VMaterial>	Materials;
-	TArray<VBone>		Bones;
-	TArray<VRawBoneInfluence> Infs;
+	// arrays to temporarily hold loaded data
+	TArray<CVec3>				Verts;
+	TArray<VVertex>				Wedges;
+	TArray<VTriangle>			Tris;
+	TArray<VMaterial>			Materials;
+	TArray<VBone>				Bones;
+	TArray<VRawBoneInfluence>	Infs;
 
 	// load primary header
 	LOAD_CHUNK(MainHdr, "ACTRHEAD");
@@ -137,10 +252,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	Verts.Empty(numVerts);
 	Verts.Add(numVerts);
 	for (i = 0; i < numVerts; i++)
-	{
 		Ar << Verts[i];
-		if (i < 20) appPrintf("V[%d] = {%g %g %g}\n", i, VECTOR_ARG(Verts[i]));
-	}
 
 	// load wedges
 	LOAD_CHUNK(WedgHdr, "VTXW0000");
@@ -150,6 +262,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	for (i = 0; i < numWedges; i++)
 		Ar << Wedges[i];
 
+	// load faces (triangles)
 	LOAD_CHUNK(FacesHdr, "FACE0000");
 	int numTris = FacesHdr.DataCount;
 	Tris.Empty(numTris);
@@ -157,6 +270,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	for (i = 0; i < numTris; i++)
 		Ar << Tris[i];
 
+	// load material info (not used)
 	LOAD_CHUNK(MatrHdr, "MATT0000");
 	int numMaterials = MatrHdr.DataCount;
 	Materials.Empty(numMaterials);
@@ -164,13 +278,17 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	for (i = 0; i < numMaterials; i++)
 		Ar << Materials[i];
 
+	// load reference pose skeleton
 	LOAD_CHUNK(BoneHdr, "REFSKELT");
 	int numBones = BoneHdr.DataCount;
 	Bones.Empty(numBones);
 	Bones.Add(numBones);
 	for (i = 0; i < numBones; i++)
 		Ar << Bones[i];
+	if (numBones > MAX_MESH_BONES)
+		appError("Mesh has too much bones (%d)", numBones);
 
+	// load vertex-to-bone weight mapping (influences)
 	LOAD_CHUNK(InfHdr, "RAWWEIGHTS");
 	int numSrcInfs = InfHdr.DataCount;
 	Infs.Empty(numSrcInfs);
@@ -178,6 +296,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	for (i = 0; i < numSrcInfs; i++)
 		Ar << Infs[i];
 
+	// here, should be end of file
 	if (!Ar.IsEof())
 		appNotify("WARNING: extra bytes in source file (position %X)", Ar.ArPos);
 
@@ -200,6 +319,9 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		CMeshPoint &P = Lod.Points[i];
 		const VVertex &W = Wedges[i];
 		P.Point = Verts[W.PointIndex];
+#if RIPOSTE_COORDS
+		P.Point[0] *= -1;
+#endif
 		P.U     = W.U;
 		P.V     = W.V;
 		// mark influences as unused
@@ -284,8 +406,11 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		B.Position    = SB.BonePos.Position;
 		B.Orientation = SB.BonePos.Orientation;
 		B.ParentIndex = SB.ParentIndex;
-		appPrintf("Bone[%d]: %s pos={%g %g %g} quat={%g %g %g %g}\n", i, *B.Name, VECTOR_ARG(B.Position),
-			B.Orientation.x, B.Orientation.y, B.Orientation.z, B.Orientation.w);
+#if RIPOSTE_COORDS
+		B.Position[0]   *= -1;
+		B.Orientation.x *= -1;
+		B.Orientation.w *= -1;
+#endif
 	}
 	// sort bones by hierarchy
 	//!! should remap weights, if it is possible to resort bones (or remove unused bones)
@@ -364,7 +489,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		}
 		if (j != numInfs)
 		{
-			appPrintf("Vertex %d: cutting redundant influences\n", i);
+			appPrintf("Vertex %d: cutting %d redundant influences\n", i, numInfs - j);
 			numInfs = j;					// trim influences
 			assert(numInfs);
 			scale = 1.0f / totalWeight;		// should rescale influences again
@@ -445,8 +570,9 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	{
 		Lod.Points[i].Normal = Normals[Wedges[i].PointIndex];
 	}
-
 	unguard;
+
+	GenerateBoxes(Mesh);
 
 	unguard;
 }
@@ -455,7 +581,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 //!! AFTER LOADING (COMMON FOR ALL FORMATS):
 //!! ? optimize mesh for vertex cache; may be, not needed, if it is done in renderer
 //!! ? find unused terminal bones
-//!! ? resort bones by hierarchy (check USkeletalMeshInstance code) -- will require to remap influences
+//!! ? resort bones by hierarchy (check CSkeletalMesh::PostLoad()) -- will require to remap influences
 
 
 /*-----------------------------------------------------------------------------
@@ -500,7 +626,15 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	Keys.Empty(numKeys);
 	Keys.Add(numKeys);
 	for (i = 0; i < numKeys; i++)
-		Ar << Keys[i];
+	{
+		VQuatAnimKey &K = Keys[i];
+		Ar << K;
+#if RIPOSTE_COORDS
+		K.Position[0]   *= -1;
+		K.Orientation.x *= -1;
+		K.Orientation.w *= -1;
+#endif
+	}
 
 	if (!Ar.IsEof())
 	{
@@ -532,7 +666,6 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	// setup animations
 	guard(ImportAnims);
 	int KeyIndex = 0;
-	const VQuatAnimKey *SrcKey = &Keys[0];
 	for (i = 0; i < numAnims; i++)
 	{
 		const AnimInfoBinary &Src = AnimInfo[i];
@@ -558,20 +691,34 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 			T.KeyTime.Add  (Src.NumRawFrames);
 		}
 		// copy keys
+#if !FIXED_FRAME_TIME
 		float Time = 0;
+#endif
+		const VQuatAnimKey *SrcKey = &Keys[Src.FirstRawFrame * numBones];
 		for (j = 0; j < Src.NumRawFrames; j++)
 		{
+#if !FIXED_FRAME_TIME
 			float frameTime = SrcKey->Time;
+#endif
 			for (k = 0; k < numBones; k++, SrcKey++, KeyIndex++)
 			{
 				assert(KeyIndex < numKeys);
 				CAnalogTrack &T = A.Tracks[k];
 				T.KeyQuat[j] = SrcKey->Orientation;
 				T.KeyPos [j] = SrcKey->Position;
+#if !FIXED_FRAME_TIME
 				T.KeyTime[j] = Time;
-				assert(frameTime == SrcKey->Time);
+				// check: all bones in single key should have save time interval
+				if (frameTime != SrcKey->Time)
+					appNotify("Anim(%s): incorrect time for bone %s, key %d: %g != %g",
+						*A.Name, *Anim.TrackBoneName[k].Name, j, SrcKey->Time, frameTime);
+#else
+				T.KeyTime[j] = j;		// equals to frame number
+#endif
 			}
+#if !FIXED_FRAME_TIME
 			Time += frameTime;
+#endif
 		}
 		unguard;
 	}

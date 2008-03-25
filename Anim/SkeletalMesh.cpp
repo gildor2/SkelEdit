@@ -1,12 +1,16 @@
 #include "Core.h"
 #include "AnimClasses.h"
 
-#include "GlViewport.h"
+#if EDITOR
+#	include "GlViewport.h"
+#endif
 
 
 /*-----------------------------------------------------------------------------
 	Simple texture wrapper
 -----------------------------------------------------------------------------*/
+
+#if EDITOR
 
 class CRenderingMaterial
 {
@@ -42,6 +46,8 @@ public:
 	}
 };
 
+#endif
+
 
 /*-----------------------------------------------------------------------------
 	CSkeletalMesh class
@@ -58,9 +64,11 @@ CSkeletalMesh::CSkeletalMesh()
 
 CSkeletalMesh::~CSkeletalMesh()
 {
+#if EDITOR
 	for (int i = 0; i < Materials.Num(); i++)
 		if (Materials[i].RenMaterial)
 			delete Materials[i].RenMaterial;
+#endif
 }
 
 
@@ -70,7 +78,7 @@ static void SetAxis(const CRotator &Rot, CAxis &Axis)
 	CVec3 angles;
 	angles[YAW]   = -Rot.Yaw   / 32768.0f * 180;
 	angles[ROLL]  = -Rot.Pitch / 32768.0f * 180;
-	angles[PITCH] =  Rot.Roll  / 32768.0f * 180;
+	angles[PITCH] = -Rot.Roll  / 32768.0f * 180;
 	Axis.FromEuler(angles);
 }
 
@@ -175,6 +183,7 @@ void CSkeletalMesh::PostLoad()
 	for (i = 0; i < numBones; i++)
 		Skeleton[i].SubtreeSize = treeSizes[i];	// remember subtree size
 
+#if EDITOR
 	// load or update textures
 	for (i = 0; i < Materials.Num(); i++)
 	{
@@ -187,6 +196,7 @@ void CSkeletalMesh::PostLoad()
 		if (M.Filename[0])
 			M.RenMaterial = new CRenderingMaterial(M.Filename);
 	}
+#endif
 
 	unguard;
 }
@@ -197,6 +207,15 @@ void CSkeletalMesh::PostEditChange()
 	// NOTE: some data, computed in PostLoad() are not editable, but recomputed anyway
 	// (but, should not be a performance issue)
 	PostLoad();
+}
+
+
+int CSkeletalMesh::FindBone(const char *BoneName) const
+{
+	for (int i = 0; i < Skeleton.Num(); i++)
+		if (!stricmp(Skeleton[i].Name, BoneName))
+			return i;
+	return -1;
 }
 
 
@@ -247,7 +266,9 @@ void CSkeletalMesh::DumpBones()
 }
 
 
-bool CSkeletalMesh::BindMaterial(int index)
+#if EDITOR
+
+bool CSkeletalMesh::BindMaterial(int index) const
 {
 	guard(CSkeletalMesh::BindMaterial);
 	if (index < 0 || index >= Materials.Num())
@@ -258,3 +279,5 @@ bool CSkeletalMesh::BindMaterial(int index)
 	return Mat->Bind();
 	unguard;
 }
+
+#endif

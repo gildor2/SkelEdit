@@ -1,6 +1,7 @@
 #ifndef __GLWINDOW_H__
 #define __GLWINDOW_H__
 
+
 #if _WIN32
 #	ifndef APIENTRY
 #		define APIENTRY __stdcall
@@ -30,6 +31,7 @@
 
 
 #define MOUSE_BUTTON(n)		(1 << (n))
+
 #define MOUSE_LEFT			0
 #define MOUSE_RIGHT			1
 #define MOUSE_MIDDLE		2
@@ -37,32 +39,37 @@
 
 namespace GL
 {
-	void text(const char *text);
-	void textf(const char *fmt, ...);
-	void OnResize(int w, int h);
 	void Set2Dmode(bool force = false);
-	void BuildMatrices();
 	void Set3Dmode();
+	void BuildMatrices();
 	void SetDistScale(float scale);
 	void SetViewOffset(const CVec3 &offset);
 	void ResetView();
+	void OnResize(int w, int h);
 	void OnMouseButton(bool down, int button);
 	void OnMouseMove(int dx, int dy);
 
-	extern bool invertXAxis;
+	extern int   width;
+	extern int   height;
+	extern CVec3 viewOrigin;
+	extern CAxis viewAxis;
+	extern bool  invertXAxis;
 };
 
 
 void DrawTextLeft(const char *text, ...);
 void DrawTextRight(const char *text, ...);
+void DrawTextPos(int x, int y, const char *text);
 void DrawText3D(const CVec3 &pos, const char *text, ...);
 void FlushTexts();
 
+// Project 3D point to screen coordinates; return false when not in view frustum
+bool ProjectToScreen(const CVec3 &pos, float scr[2]);
+bool ProjectToScreen(const CVec3 &pos, int scr[2]);
 
+
+// GlTexture.cpp functions
 int GL_LoadTexture(const char *name);
-
-
-#define SPEC_KEY(x)		(SDLK_##x)
 
 
 #endif // __GLWINDOW_H__

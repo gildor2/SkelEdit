@@ -1,3 +1,8 @@
+#if _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include "Core.h"
 
 
@@ -58,6 +63,7 @@ static COutputDevice *loggers[MAX_LOGGERS];
 
 void COutputDevice::Printf(const char *fmt, ...)
 {
+	guard(COutputDevice::Printf);
 	va_list	argptr;
 	va_start(argptr, fmt);
 	char buf[BUFFER_LEN];
@@ -67,6 +73,7 @@ void COutputDevice::Printf(const char *fmt, ...)
 
 	Write(buf);
 	if (FlushEveryTime) Flush();
+	unguard;
 }
 
 
@@ -125,6 +132,8 @@ void appPrintf(const char *fmt, ...)
 	Simple error/notofication functions
 -----------------------------------------------------------------------------*/
 
+#if EDITOR
+
 void appError(char *fmt, ...)
 {
 	va_list	argptr;
@@ -157,6 +166,7 @@ void appSetNotifyHeader(const char *fmt, ...)
 
 void appNotify(char *fmt, ...)
 {
+	guard(appNotify);
 	va_list	argptr;
 	va_start(argptr, fmt);
 	char buf[BUFFER_LEN];
@@ -177,7 +187,10 @@ void appNotify(char *fmt, ...)
 	appPrintf("*** %s\n", buf);
 	// clean notify header
 	NotifyBuf[0] = 0;
+	unguard;
 }
+
+#endif
 
 
 char GErrorHistory[2048];
@@ -223,6 +236,15 @@ void appUnwindThrow(const char *fmt, ...)
 /*-----------------------------------------------------------------------------
 	CArchive helpers
 -----------------------------------------------------------------------------*/
+
+#if !LITTLE_ENDIAN
+void CArchive::ByteOrderSerialize(void *data, int size)
+{
+	for (byte *p = (byte*)data + size - 1; p >= (byte*)data; p--)
+		Serialize(p, 1);
+}
+#endif
+
 
 CArchive& operator<<(CArchive &Ar, CCompactIndex &I)
 {
@@ -306,6 +328,7 @@ void* LoadFile(const char* filename)
 	return buf;
 }
 
+
 /*-----------------------------------------------------------------------------
 	CArray implementation
 -----------------------------------------------------------------------------*/
@@ -313,13 +336,13 @@ void* LoadFile(const char* filename)
 void CArray::Empty(int count, int elementSize)
 {
 	if (DataPtr)
-		delete[] DataPtr;
+		appFree(DataPtr);
 	DataPtr   = NULL;
 	DataCount = 0;
 	MaxCount  = count;
 	if (count)
 	{
-		DataPtr = new byte[count * elementSize];
+		DataPtr = appMalloc(count * elementSize);
 		memset(DataPtr, 0, count * elementSize);
 	}
 }
@@ -328,16 +351,16 @@ void CArray::Empty(int count, int elementSize)
 void CArray::Insert(int index, int count, int elementSize)
 {
 	guard(CArray::Insert);
+	if (count <= 0) return;
 	assert(index >= 0);
 	assert(index <= DataCount);
-	assert(count > 0);
 	// check for available space
 	if (DataCount + count > MaxCount)
 	{
 		// not enough space, resize ...
 		int prevCount = MaxCount;
 		MaxCount = ((DataCount + count + 7) / 8) * 8 + 8;
-		DataPtr = realloc(DataPtr, MaxCount * elementSize);
+		DataPtr = appRealloc(DataPtr, MaxCount * elementSize);
 		// zero added memory
 		memset(
 			(byte*)DataPtr + prevCount * elementSize,
@@ -359,8 +382,8 @@ void CArray::Insert(int index, int count, int elementSize)
 void CArray::Remove(int index, int count, int elementSize)
 {
 	guard(CArray::Remove);
+	if (count <= 0) return;
 	assert(index >= 0);
-	assert(count > 0);
 	assert(index + count <= DataCount);
 	// move data
 	memcpy(
@@ -371,4 +394,32 @@ void CArray::Remove(int index, int count, int elementSize)
 	// decrease counter
 	DataCount -= count;
 	unguard;
+}
+
+
+/*-----------------------------------------------------------------------------
+	Core initialization
+-----------------------------------------------------------------------------*/
+
+#if _WIN32
+
+static void SetDefaultDirectory()
+{
+	TString<256> Filename;
+	GetModuleFileName(NULL, ARRAY_ARG(Filename));
+	char *s = Filename.rchr('\\');
+	if (s) *s = 0;
+	SetCurrentDirectory(Filename);
+}
+
+#else
+#error Port this!
+#endif
+
+
+void appInit()
+{
+#if EDITOR
+	SetDefaultDirectory();
+#endif
 }

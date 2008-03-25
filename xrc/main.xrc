@@ -57,6 +57,10 @@
                     <label>Show &amp;normals\tCtrl+N</label>
                     <checkable>1</checkable>
                 </object>
+                <object class="wxMenuItem" name="ID_BBOXES">
+                    <label>Show &amp;hitboxes\tCtrl+H</label>
+                    <checkable>1</checkable>
+                </object>
                 <object class="wxMenuItem" name="ID_TEXTURING">
                     <label>Disable mesh texturing\tCtrl+M</label>
                     <checkable>1</checkable>
@@ -88,7 +92,39 @@
                 </object>
             </object>
             <object class="wxMenu">
+                <label>&amp;Edit</label>
+                <object class="wxMenuItem" name="ID_MOVEGIZMO">
+                    <label>&amp;Move mode\tAlt+W</label>
+                    <radio>1</radio>
+                    <checked>1</checked>
+                </object>
+                <object class="wxMenuItem" name="ID_ROTATEGIZMO">
+                    <label>&amp;Rotate mode\tAlt+E</label>
+                    <radio>1</radio>
+                </object>
+                <object class="wxMenuItem" name="ID_SCALEGIZMO">
+                    <label>&amp;Scale mode\tAlt+R</label>
+                    <radio>1</radio>
+                </object>
+            </object>
+            <object class="wxMenu">
                 <label>&amp;Mesh</label>
+                <object class="wxMenuItem" name="ID_NEWHITBOX">
+                    <label>Create new hitbox ...</label>
+                </object>
+                <object class="wxMenuItem" name="ID_REMOVEHITBOXES">
+                    <label>Remove all hitboxes ...</label>
+                </object>
+                <object class="wxMenuItem" name="ID_RECREATEHITBOXES">
+                    <label>Recreate all hitboxes ...</label>
+                </object>
+                <object class="separator">
+                </object>
+                <object class="wxMenuItem" name="ID_NEWSOCKET">
+                    <label>Create new socket ...</label>
+                </object>
+                <object class="separator">
+                </object>
                 <object class="wxMenuItem" name="ID_DUMPBONES">
                     <label>Dump bone info to log</label>
                 </object>
@@ -136,10 +172,32 @@
                 <tooltip>Show normals</tooltip>
                 <toggle>1</toggle>
             </object>
+            <object class="tool" name="ID_BBOXES">
+                <bitmap>hitboxes.png</bitmap>
+                <tooltip>Show mesh hitboxes</tooltip>
+                <toggle>1</toggle>
+            </object>
             <object class="tool" name="ID_TEXTURING">
                 <bitmap>texturing.png</bitmap>
                 <tooltip>Disable texturing</tooltip>
                 <toggle>1</toggle>
+            </object>
+            <object class="separator">
+            </object>
+            <object class="tool" name="ID_MOVEGIZMO">
+                <bitmap>gizmo_move.png</bitmap>
+                <tooltip>Move mode</tooltip>
+                <radio>1</radio>
+            </object>
+            <object class="tool" name="ID_ROTATEGIZMO">
+                <bitmap>gizmo_rotate.png</bitmap>
+                <tooltip>Rotate mode</tooltip>
+                <radio>1</radio>
+            </object>
+            <object class="tool" name="ID_SCALEGIZMO">
+                <bitmap>gizmo_scale.png</bitmap>
+                <tooltip>Scale mode</tooltip>
+                <radio>1</radio>
             </object>
             <object class="separator">
             </object>
@@ -453,10 +511,68 @@
                 </object>
             </object>
         </object>
-        <object class="wxStatusBar" name="ID_STATUSBAR1">
+        <object class="wxStatusBar" name="ID_STATUSBAR">
             <style>wxST_SIZEGRIP|wxNO_BORDER</style>
-            <fields>2</fields>
+            <fields>3</fields>
             <widths></widths>
+        </object>
+    </object>
+    <object class="wxDialog" name="ID_BONEFRAME">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX|wxTAB_TRAVERSAL</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+        <size>500,-1</size>
+        <title>Create new Something</title>
+        <centered>1</centered>
+        <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                <border>5</border>
+                <object class="wxStaticText" name="wxID_STATIC">
+                    <label>Attach to bone:</label>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <object class="wxChoice" name="ID_BONENAME">
+                </object>
+            </object>
+            <object class="sizeritem">
+                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                <border>5</border>
+                <object class="wxStaticText" name="wxID_STATIC">
+                    <label>Name of object:</label>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <object class="wxTextCtrl" name="ID_OBJNAME">
+                    <size>300,-1</size>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <flag>wxALIGN_RIGHT|wxALL</flag>
+                <border>5</border>
+                <object class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="wxID_OK">
+                            <label>OK</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="wxID_CANCEL">
+                            <label>Cancel</label>
+                        </object>
+                    </object>
+                </object>
+            </object>
         </object>
     </object>
 </resource>

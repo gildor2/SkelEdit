@@ -256,6 +256,9 @@ sub CheckCondition {
 	} else {
 		Error ("unknown if... directive: $cmd");
 	}
+	if (!$cond) {
+		$cond = 0;
+	}
 	return $cond;
 }
 

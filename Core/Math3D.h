@@ -177,6 +177,39 @@ float VectorDistance(const CVec3 &vec1, const CVec3 &vec2);
 float VectorNormalize(const CVec3 &v, CVec3 &out);
 
 /*-----------------------------------------------------------------------------
+	Axis aligned box
+-----------------------------------------------------------------------------*/
+
+struct CBox
+{
+	// fields
+	CVec3	mins, maxs;
+	// methods
+	void Clear();							// set mins>maxs (negative volume)
+	void Expand(const CVec3 &p);			// expand mins/maxs by point p
+	void Expand(const CBox &b);				// include box b into volume
+	void GetCenter(CVec3 &p) const;			// compute center point
+	bool Contains(const CVec3 &p) const;	// true, when point is inside box volume
+	bool Intersects(const CBox &b) const;	// true, when boxes have common volume
+
+	inline void GetVertex(int idx, CVec3& vec) const
+	{
+		vec[0] = (idx & 1) ? maxs[0] : mins[0];
+		vec[1] = (idx & 2) ? maxs[1] : mins[1];
+		vec[2] = (idx & 4) ? maxs[2] : mins[2];
+	}
+	inline void Inflate(float amount)
+	{
+		mins[0] -= amount;
+		mins[1] -= amount;
+		mins[2] -= amount;
+		maxs[0] += amount;
+		maxs[1] += amount;
+		maxs[2] += amount;
+	}
+};
+
+/*-----------------------------------------------------------------------------
 	Axis
 -----------------------------------------------------------------------------*/
 
@@ -204,6 +237,11 @@ struct CAxis
 	{
 		return v[index];
 	}
+
+	friend CArchive& operator<<(CArchive &Ar, CAxis &A)
+	{
+		return Ar << A.v[0] << A.v[1] << A.v[2];
+	}
 };
 
 
@@ -223,6 +261,11 @@ struct CCoords
 	void TransformCoords(const CCoords &src, CCoords &dst) const;	// orthonormal 'this'
 	void TransformCoordsSlow(const CCoords &src, CCoords &dst) const; // any 'this'
 	void UnTransformCoords(const CCoords &src, CCoords &dst) const;
+
+	friend CArchive& operator<<(CArchive &Ar, CCoords &C)
+	{
+		return Ar << C.origin << C.axis;
+	}
 };
 
 // Functions for work with coordinate systems, not combined into CCoords class

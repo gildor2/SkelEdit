@@ -75,6 +75,58 @@ float VectorDistance(const CVec3 &vec1, const CVec3 &vec2)
 
 
 /*-----------------------------------------------------------------------------
+	CBox
+-----------------------------------------------------------------------------*/
+
+void CBox::Clear()
+{
+	mins[0] = mins[1] = mins[2] =  BIG_NUMBER;
+	maxs[0] = maxs[1] = maxs[2] = -BIG_NUMBER;
+}
+
+void CBox::Expand(const CVec3 &p)
+{
+	for (int i = 0; i < 3; i++)
+	{
+		float val = p[i];
+		EXPAND_BOUNDS(val, mins[i], maxs[i]);
+	}
+}
+
+void CBox::Expand(const CBox &b)
+{
+	for (int i = 0; i < 3; i++)
+	{
+		if (mins[i] > b.mins[i]) mins[i] = b.mins[i];
+		if (maxs[i] < b.maxs[i]) maxs[i] = b.maxs[i];
+	}
+}
+
+void CBox::GetCenter(CVec3 &p) const
+{
+	for (int i = 0; i < 3; i++)
+		p[i] = (mins[i] + maxs[i]) / 2;
+}
+
+bool CBox::Contains(const CVec3 &p) const
+{
+	for (int i = 0; i < 3; i++)
+		if (p[i] < mins[i] || p[i] > maxs[i]) return false;
+	return true;
+}
+
+bool CBox::Intersects(const CBox &b) const
+{
+	for (int i = 0; i < 3; i++)
+	{
+		if (mins[i] >= b.maxs[i]) return false;
+		if (maxs[i] <= b.mins[i]) return false;
+	}
+	return true;
+}
+
+
+/*-----------------------------------------------------------------------------
 	CAxis
 -----------------------------------------------------------------------------*/
 
@@ -88,16 +140,20 @@ void CAxis::FromEuler(const CVec3 &angles)
 
 void CAxis::TransformVector(const CVec3 &src, CVec3 &dst) const
 {
-	dst[0] = dot(src, v[0]);
-	dst[1] = dot(src, v[1]);
-	dst[2] = dot(src, v[2]);
+	CVec3 tmp;
+	tmp[0] = dot(src, v[0]);
+	tmp[1] = dot(src, v[1]);
+	tmp[2] = dot(src, v[2]);
+	dst = tmp;
 }
 
 void CAxis::TransformVectorSlow(const CVec3 &src, CVec3 &dst) const
 {
-	dst[0] = dot(src, v[0]) / v[0].GetLengthSq();
-	dst[1] = dot(src, v[1]) / v[1].GetLengthSq();
-	dst[2] = dot(src, v[2]) / v[2].GetLengthSq();
+	CVec3 tmp;
+	tmp[0] = dot(src, v[0]) / v[0].GetLengthSq();
+	tmp[1] = dot(src, v[1]) / v[1].GetLengthSq();
+	tmp[2] = dot(src, v[2]) / v[2].GetLengthSq();
+	dst = tmp;
 }
 
 void CAxis::UnTransformVector(const CVec3 &src, CVec3 &dst) const

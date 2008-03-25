@@ -1,7 +1,13 @@
+Syntax of data declarations, used in .uc files.
+This syntax is derived from Unreal Engine script syntax. Information may be
+found here: http://udn.epicgames.com/Three/UnrealScriptReference.html
+Note: syntax used in our engine is partially differs from UE syntax.
+
+
 Class modifiers:
 ----------------
-extends OtherClass
--abstract			do not allow instantiation, do not include in "new property instance" list ...
+extends OtherClass		derive thsi class from OtherClass
+abstract			do not allow instantiation, do not include in "new property instance" list ...
 noexport			do not create C++ header for this class (created separately)
 -hidecategories(list)		do not show listed property categories in editor (for parent class fields)
 -exportstructs			export all structs declared in this class to C++ header; this is equivalent to
@@ -17,8 +23,10 @@ var				not editable prop
 var()				editable prop
 var(Group)			editable prop, displayed in property editor in "Group"
 editconst			do not allow to edit in editor
-editfixedsize			disallow resizing of dynamic array variable
-noexport			do not export field, should be explicitly descrived in [struct]cpptext
+editfixedsize			dynamic array: disallow resizing of array variable (no 'add' and 'remove' buttons)
+editnoadd			dynamic array: disallow creation of new array item (but detetion is still allowed)
+				note: absent in Unreal
+noexport			do not export field, should be explicitly declared in [struct]cpptext
 -transient			do not serialize property
 -native				do not serialize as property, serialized by C++ code
 
@@ -71,3 +79,4 @@ string Filename[size]		can specify file type and extension mask in a 1st line of
 				following form:
 					"#FILENAME Texture: *.bmp;*.tga"
 string Dirname[size]		specify "#DIRNAME" in a 1st comment line
+int EnumValue			specify "#ENUM EnumName" to use integer value as index in some enumeration

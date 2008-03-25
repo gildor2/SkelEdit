@@ -14,6 +14,27 @@
 DEFINE_EVENT_TYPE(wxEVT_LOG_CLOSED)
 
 
+WLogWindow::WLogWindow(wxFrame *parent)
+:	wxLogWindow(parent, "System Log", false)
+,	pParent(parent)
+,	cursor(0)
+{
+	// register logger in wxWidgets log chain and Core appPrintf() chain
+	wxLog::SetActiveTarget(this);
+	COutputDevice::Register();
+}
+
+
+void WLogWindow::OnFrameDelete(wxFrame *frame)
+{
+	// unregister logger
+	wxLog::SetActiveTarget(NULL);
+	COutputDevice::Unregister();
+	// save window position etc
+	CollectSettings();
+}
+
+
 void WLogWindow::Write(const char *str)
 {
 	// wxLog will automatically add "\n" in every call to wxLogMessage(),
@@ -46,12 +67,6 @@ bool WLogWindow::OnFrameClose(wxFrame *frame)
 	wxCommandEvent event(wxEVT_LOG_CLOSED);
 	wxPostEvent(pParent, event);
 	return true;
-}
-
-
-void WLogWindow::OnFrameDelete(wxFrame *frame)
-{
-	CollectSettings();
 }
 
 

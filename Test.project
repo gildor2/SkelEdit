@@ -9,12 +9,23 @@ OPTIMIZE   = size
 
 PDB        = 1
 
-INCLUDES   = libs/include Core Editor Anim
-LIBRARIES  = libs
+!if -d "libs/include"
+	# using locally placed libraries
+	wx_inc = libs/include
+	wx_lib = libs
+!else
+	# using global libraries
+	wx_inc = ../../ThirdParty/inc
+	wx_lib = ../../ThirdParty/lib/wx
+!endif
+
+
+INCLUDES   = $wx_inc Core Editor Anim
+LIBRARIES  = $wx_lib
 OBJDIR     = obj
 STDLIBS    = wxmsw28 wxmsw28_gl wxcode_msw28_propgrid opengl32 user32
 
-DEFINES    = WXUSINGDLL
+DEFINES    = WXUSINGDLL EDITOR
 
 ALLOW_MISSING_INCLUDES = 1
 
@@ -24,12 +35,15 @@ sources(MAIN) = {
 	Editor/LogWindow.cpp
 	Editor/PropEdit.cpp
 	Editor/GLCanvas.cpp
+	Editor/Gizmo.cpp
 	Editor/ImportPsk.cpp
 	Editor/AnimCompression.cpp
 	Editor/AppSettings.cpp
 	# skeletal system
 	Anim/SkeletalMesh.cpp
+	Anim/AnimSet.cpp
 	Anim/SkelMeshInstance.cpp
+	Anim/AnimNode.cpp
 	# core libraries
 	Core/Core.cpp
 	Core/Strings.cpp
@@ -39,6 +53,7 @@ sources(MAIN) = {
 	Core/TextContainer.cpp
 	Core/ScriptParser.cpp
 	Core/Object.cpp
+	Core/CoreTypeinfo.cpp
 	Core/GlViewport.cpp
 	Core/GlTexture.cpp
 }

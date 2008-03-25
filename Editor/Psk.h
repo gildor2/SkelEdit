@@ -1,12 +1,11 @@
-#ifndef __IMPORTPSK_H__
-#define __IMPORTPSK_H__
+#ifndef __PSK_H__
+#define __PSK_H__
 
 
 /******************************************************************************
- *	PSK file format structures
+ *	Common structures
  *****************************************************************************/
 
-// common (psk and psa) structure: chunk header
 struct VChunkHeader
 {
 	char			ChunkID[20];
@@ -21,6 +20,18 @@ struct VChunkHeader
 	}
 };
 
+#define LOAD_CHUNK(var, name)	\
+	VChunkHeader var;			\
+	Ar << var;					\
+	if (strcmp(var.ChunkID, name) != 0) \
+		appError("LoadChunk: expecting header \"%s\", but found \"%s\"", name, var.ChunkID);
+//	appPrintf("%s: type=%d / count=%d / size=%d\n", var.ChunkID, var.TypeFlag, var.DataCount, var.DataSize);
+
+
+
+/******************************************************************************
+ *	PSK file format structures
+ *****************************************************************************/
 
 struct VVertex
 {
@@ -151,12 +162,12 @@ struct AnimInfoBinary
 
 	int				RootInclude;			// 0 none 1 included (unused)
 	int				KeyCompressionStyle;	// Reserved: variants in tradeoffs for compression.
-	int				KeyQuotum;				// Max key quotum for compression
+	int				KeyQuotum;				// Max key quotum for compression; ActorX sets this to numFrames*numBones
 	float			KeyReduction;			// desired
 	float			TrackTime;				// explicit - can be overridden by the animation rate
 	float			AnimRate;				// frames per second.
 	int				StartBone;				// Reserved: for partial animations
-	int				FirstRawFrame;
+	int				FirstRawFrame;			// global number of first animation frame
 	int				NumRawFrames;			// NumRawFrames and AnimRate dictate tracktime...
 
 	friend CArchive& operator<<(CArchive &Ar, AnimInfoBinary &A)
@@ -175,6 +186,7 @@ struct VQuatAnimKey
 	CVec3			Position;				// Relative to parent
 	CQuat			Orientation;			// Relative to parent
 	float			Time;					// The duration until the next key (end key wraps to first ...)
+	// NOTE: Maya ActorX does not initialize "Time" field, so assume 1.0f here.
 
 	friend CArchive& operator<<(CArchive &Ar, VQuatAnimKey &K)
 	{
@@ -183,11 +195,4 @@ struct VQuatAnimKey
 };
 
 
-#define LOAD_CHUNK(var, name)	\
-	VChunkHeader var;			\
-	Ar << var;					\
-	if (strcmp(var.ChunkID, name) != 0) \
-		appError("LoadChunk: expecting header \"%s\", but found \"%s\"", name, var.ChunkID);
-
-
-#endif // __IMPORTPSK_H__
+#endif // __PSK_H__

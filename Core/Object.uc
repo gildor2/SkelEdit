@@ -1,10 +1,18 @@
 class Object
-	noexport;
+	noexport
+	abstract;
 
 
 /*-----------------------------------------------------------------------------
  *	Common structures (declared here for typeinfo information)
  *---------------------------------------------------------------------------*/
+
+struct Vec2
+{
+	var() float X;
+	var() float Y;
+};
+
 
 struct Vec3
 {
@@ -35,6 +43,14 @@ struct Quat
 	var() float Y;
 	var() float Z;
 	var() float W;
+};
+
+
+struct Color3f
+{
+	var() float R;
+	var() float G;
+	var() float B;
 };
 
 

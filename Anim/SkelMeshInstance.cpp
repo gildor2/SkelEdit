@@ -3,16 +3,42 @@
 #include "AnimClasses.h"
 #include "SkelMeshInstance.h"
 
-#include "GlViewport.h"				//!! MOVE DRAWING CODE OUTSIDE FROM CLASS
+#if EDITOR
+#	include "GlViewport.h"
+#endif
 
 
-/* NOTE for multi-AnimSet support:
+#define SHOW_BONE_UPDATES			1
+
+
+/* NOTES for multi-AnimSet support:
  *	- requires multiple CMeshBoneData.BoneMap items
  *	- requires multiple AnimSet pointers
- *	- current animation should be stored by pointer, not by index
- *	  - or should make container with union of all AnimSet sequences)
- *	  - or store current animation as pair of AnimSet+AnimIndex
+ *  * can check UT3/Engine/Classes/AnimSet.uc AnimSetMeshLinkup structure
  */
+
+/* NOTES for multi-mesh support:
+ *	a) attach meshes as separate CSkelMeshInstance, link with pointers (one mesh
+ *	   can be attached only once)
+ *	b) may be, use array of CSkeletalMesh pointers
+ *	   - this will require exactly the same bone indices in all linked meshes, or
+ *		 mechanism to remap bones
+ */
+
+/* NOTES for AnimTree support
+ *	- replaces animation channels
+ *	- will require
+ *	  a) duplicate whole AnimTree for all mesh instances
+ *	  b) use special holder for application-tured data (coefficients for animation
+ *		 selection)
+ *	- AnimSet pointers array will be placed in AnimTree, not in mesh instance
+ *	* check UT3/Engine/SkeletalMeshComponent.uc for ideas
+ */
+
+
+/*-----------------------------------------------------------------------------
+	Local skeleton state data
+-----------------------------------------------------------------------------*/
 
 struct CMeshBoneData
 {
@@ -31,9 +57,6 @@ struct CMeshBoneData
 	CVec3		Pos;				// current position of bone
 	CQuat		Quat;				// current orientation quaternion
 };
-
-
-#define ANIM_UNASSIGNED			-2
 
 
 /*-----------------------------------------------------------------------------
@@ -56,8 +79,8 @@ void CSkelMeshInstance::ClearSkelAnims()
 	// init 1st animation channel with default pose
 	for (int i = 0; i < MAX_SKELANIMCHANNELS; i++)
 	{
-		Channels[i].AnimIndex1     = ANIM_UNASSIGNED;
-		Channels[i].AnimIndex2     = ANIM_UNASSIGNED;
+		Channels[i].Anim1          = NULL;
+		Channels[i].Anim2          = NULL;
 		Channels[i].SecondaryBlend = 0;
 		Channels[i].BlendAlpha     = 1;
 		Channels[i].RootBone       = 0;
@@ -65,7 +88,7 @@ void CSkelMeshInstance::ClearSkelAnims()
 }
 
 
-void CSkelMeshInstance::SetMesh(CSkeletalMesh *Mesh)
+void CSkelMeshInstance::SetMesh(const CSkeletalMesh *Mesh)
 {
 	guard(CSkelMeshInstance::SetMesh);
 
@@ -112,10 +135,12 @@ void CSkelMeshInstance::SetMesh(CSkeletalMesh *Mesh)
 }
 
 
-void CSkelMeshInstance::SetAnim(CAnimSet *Anim)
+void CSkelMeshInstance::SetAnim(const CAnimSet *Anim)
 {
+	if (!pMesh) return;				// may be, bad mesh ... should revise for multi-mesh support
+
 	pAnim = Anim;
-	assert(pMesh);
+//??	assert(pMesh);
 	assert(pAnim);
 
 	// prepare animation <-> mesh bone map
@@ -125,7 +150,7 @@ void CSkelMeshInstance::SetAnim(CAnimSet *Anim)
 		BoneData[i].BoneMap = -1;
 		// find reference bone in animation track
 		for (int j = 0; j < pAnim->TrackBoneName.Num(); j++)
-			if (!stricmp(B.Name, pAnim->TrackBoneName[j].Name))
+			if (!stricmp(B.Name, pAnim->TrackBoneName[j].Name))	// case-insensitive compare
 			{
 				BoneData[i].BoneMap = j;
 				break;
@@ -138,32 +163,24 @@ void CSkelMeshInstance::SetAnim(CAnimSet *Anim)
 	Miscellaneous
 -----------------------------------------------------------------------------*/
 
-int CSkelMeshInstance::FindBone(const char *BoneName) const
-{
-	assert(pMesh);
-	for (int i = 0; i < pMesh->Skeleton.Num(); i++)
-		if (pMesh->Skeleton[i].Name == BoneName)
-			return i;
-	return -1;
-}
-
-
-int CSkelMeshInstance::FindAnim(const char *AnimName) const
+const CMeshAnimSeq *CSkelMeshInstance::FindAnim(const char *AnimName) const
 {
 	if (!pAnim || !AnimName)
-		return -1;
-	for (int i = 0; i < pAnim->Sequences.Num(); i++)
-		if (pAnim->Sequences[i].Name == AnimName)
-			return i;
-	return -1;
+		return NULL;
+	// note: when multiple AnimSet's will be used, handle them here
+	// UT3 uses last-to-first search, so 2nd AnimSet will override animations of 1st
+	return pAnim->FindAnim(AnimName);
 }
 
 
 void CSkelMeshInstance::SetBoneScale(const char *BoneName, float scale)
 {
-	int BoneIndex = FindBone(BoneName);
+	guard(CSkelMeshInstance::SetBoneScale);
+	assert(pMesh);
+	int BoneIndex = pMesh->FindBone(BoneName);
 	if (BoneIndex < 0) return;
 	BoneData[BoneIndex].Scale = scale;
+	unguard;
 }
 
 
@@ -171,9 +188,23 @@ bool CSkelMeshInstance::IsAnimating(int Channel)
 {
 	const CAnimChan &chn = GetStage(Channel);
 	if (!chn.Rate) return false;
-	if (chn.AnimIndex1 == ANIM_UNASSIGNED)
-		return false;
-	return true;
+	return (chn.Anim1 != NULL);
+}
+
+
+const CCoords &CSkelMeshInstance::GetBoneCoords(int BoneIndex) const
+{
+	assert(pMesh);
+	assert(BoneIndex >= 0 && BoneIndex < pMesh->Skeleton.Num());
+	return BoneData[BoneIndex].Coords;
+}
+
+
+const CCoords &CSkelMeshInstance::GetBoneTransform(int BoneIndex) const
+{
+	assert(pMesh);
+	assert(BoneIndex >= 0 && BoneIndex < pMesh->Skeleton.Num());
+	return BoneData[BoneIndex].Transform;
 }
 
 
@@ -181,143 +212,9 @@ bool CSkelMeshInstance::IsAnimating(int Channel)
 	Skeletal animation itself
 -----------------------------------------------------------------------------*/
 
-#define MAX_LINEAR_KEYS		4
-
-//!! DEBUGGING, remove later
-#define DEBUG_BIN_SEARCH	1
-#if 0
-#	define DBG		printf
-#else
-#	define DBG		if (1) {} else printf
+#if SHOW_BONE_UPDATES
+static int BoneUpdateCounts[MAX_MESH_BONES];
 #endif
-//!! ^^^^^^
-
-
-static void GetBonePosition(const CAnalogTrack &A, float Frame, float NumFrames, bool Loop,
-	CVec3 &DstPos, CQuat &DstQuat)
-{
-
-	guard(GetBonePosition);
-
-	int i;
-
-	// fast case: 1 frame only
-	if (A.KeyTime.Num() == 1)
-	{
-		DstPos  = A.KeyPos[0];
-		DstQuat = A.KeyQuat[0];
-		return;
-	}
-
-	// find index in time key array
-	int NumKeys = A.KeyTime.Num();
-	// *** binary search ***
-	int Low = 0, High = NumKeys-1;
-	DBG(">>> find %.5f\n", Frame);
-	while (Low + MAX_LINEAR_KEYS < High)
-	{
-		int Mid = (Low + High) / 2;
-		DBG("   [%d..%d] mid: [%d]=%.5f", Low, High, Mid, A.KeyTime[Mid]);
-		if (Frame < A.KeyTime[Mid])
-			High = Mid-1;
-		else
-			Low = Mid;
-		DBG("   d=%f\n", A.KeyTime[Mid]-Frame);
-	}
-
-	// *** linear search ***
-	DBG("   linear: %d..%d\n", Low, High);
-	for (i = Low; i <= High; i++)
-	{
-		float CurrKeyTime = A.KeyTime[i];
-		DBG("   #%d: %.5f\n", i, CurrKeyTime);
-		if (Frame == CurrKeyTime)
-		{
-			// exact key found
-			DstPos  = (A.KeyPos.Num()  > 1) ? A.KeyPos[i]  : A.KeyPos[0];
-			DstQuat = (A.KeyQuat.Num() > 1) ? A.KeyQuat[i] : A.KeyQuat[0];
-			return;
-		}
-		if (Frame < CurrKeyTime)
-		{
-			i--;
-			break;
-		}
-	}
-	if (i > High)
-		i = High;
-
-#if DEBUG_BIN_SEARCH
-	EXEC_ONCE(appPrintf("!!! WARNING: DEBUG_BIN_SEARCH enabled !!!\n"))
-	//!! --- checker ---
-	int i1;
-	for (i1 = 0; i1 < NumKeys; i1++)
-	{
-		float CurrKeyTime = A.KeyTime[i1];
-		if (Frame == CurrKeyTime)
-		{
-			// exact key found
-			DstPos  = (A.KeyPos.Num()  > 1) ? A.KeyPos[i]  : A.KeyPos[0];
-			DstQuat = (A.KeyQuat.Num() > 1) ? A.KeyQuat[i] : A.KeyQuat[0];
-			return;
-		}
-		if (Frame < CurrKeyTime)
-		{
-			i1--;
-			break;
-		}
-	}
-	if (i1 > NumKeys-1)
-		i1 = NumKeys-1;
-	if (i != i1)
-	{
-		appError("i=%d != i1=%d", i, i1);
-	}
-#endif
-
-	int X = i;
-	int Y = i+1;
-	float frac;
-	if (Y >= NumKeys)
-	{
-		if (!Loop)
-		{
-			// clamp animation
-			Y = NumKeys-1;
-			assert(X == Y);
-			frac = 0;
-		}
-		else
-		{
-			// loop animation
-			Y = 0;
-			frac = (Frame - A.KeyTime[X]) / (NumFrames - A.KeyTime[X]);
-		}
-	}
-	else
-	{
-		frac = (Frame - A.KeyTime[X]) / (A.KeyTime[Y] - A.KeyTime[X]);
-	}
-
-	assert(X >= 0 && X < NumKeys);
-	assert(Y >= 0 && Y < NumKeys);
-
-	// get position
-	if (A.KeyPos.Num() > 1)
-		Lerp(A.KeyPos[X], A.KeyPos[Y], frac, DstPos);
-	else
-		DstPos = A.KeyPos[0];
-	// get orientation
-	if (A.KeyQuat.Num() > 1)
-		Slerp(A.KeyQuat[X], A.KeyQuat[Y], frac, DstQuat);
-	else
-		DstQuat = A.KeyQuat[0];
-
-	unguard;
-}
-
-
-static int BoneUpdateCounts[MAX_MESH_BONES];	//!! remove later
 
 void CSkelMeshInstance::UpdateSkeleton()
 {
@@ -327,23 +224,20 @@ void CSkelMeshInstance::UpdateSkeleton()
 	assert(MaxAnimChannel < MAX_SKELANIMCHANNELS);
 	int Stage;
 	CAnimChan *Chn;
-	memset(BoneUpdateCounts, 0, sizeof(BoneUpdateCounts)); //!! remove later
+#if SHOW_BONE_UPDATES
+	memset(BoneUpdateCounts, 0, sizeof(BoneUpdateCounts));
+#endif
 	for (Stage = 0, Chn = Channels; Stage <= MaxAnimChannel; Stage++, Chn++)
 	{
-		if (Stage > 0 && (Chn->AnimIndex1 == ANIM_UNASSIGNED || Chn->BlendAlpha <= 0))
+		if (Stage > 0 && (!Chn->Anim1 || Chn->BlendAlpha <= 0))
 			continue;
+		// NOTE: if Stage==0 and animation is not assigned, we will get here anyway
 
-		const CMeshAnimSeq *AnimSeq1 = NULL, *AnimSeq2 = NULL;
 		float Time2;
-		if (Chn->AnimIndex1 >= 0)
+		if (Chn->Anim1 && Chn->Anim2 && Chn->SecondaryBlend)
 		{
-			AnimSeq1 = &pAnim->Sequences[Chn->AnimIndex1];
-			if (Chn->AnimIndex2 >= 0 && Chn->SecondaryBlend)
-			{
-				AnimSeq2 = &pAnim->Sequences[Chn->AnimIndex2];
-				// compute time for secondary channel; always in sync with primary channel
-				Time2 = Chn->Time / AnimSeq1->NumFrames * AnimSeq2->NumFrames;
-			}
+			// compute time for secondary channel; always in sync with primary channel
+			Time2 = Chn->Time / Chn->Anim1->NumFrames * Chn->Anim2->NumFrames;
 		}
 
 		// compute bone range, affected by specified animation bone
@@ -373,23 +267,25 @@ void CSkelMeshInstance::UpdateSkeleton()
 			CQuat BO;
 			int BoneIndex = data->BoneMap;
 			// compute bone orientation
-			if (AnimSeq1 && BoneIndex >= 0)
+			if (Chn->Anim1 && BoneIndex >= 0)
 			{
 				// get bone position from track
-				if (!AnimSeq2 || Chn->SecondaryBlend != 1.0f)
+				if (!Chn->Anim2 || Chn->SecondaryBlend != 1.0f)
 				{
-					BoneUpdateCounts[i]++;		//!! remove later
-					GetBonePosition(AnimSeq1->Tracks[BoneIndex], Chn->Time, AnimSeq1->NumFrames,
-						Chn->Looped, BP, BO);
+#if SHOW_BONE_UPDATES
+					BoneUpdateCounts[i]++;
+#endif
+					Chn->Anim1->GetBonePosition(BoneIndex, Chn->Time, Chn->Looped, BP, BO);
 				}
 				// blend secondary animation
-				if (AnimSeq2)
+				if (Chn->Anim2 && Chn->SecondaryBlend > 0.0f)
 				{
 					CVec3 BP2;
 					CQuat BO2;
-					BoneUpdateCounts[i]++;		//!! remove later
-					GetBonePosition(AnimSeq2->Tracks[BoneIndex], Time2, AnimSeq2->NumFrames,
-						Chn->Looped, BP2, BO2);
+#if SHOW_BONE_UPDATES
+					BoneUpdateCounts[i]++;
+#endif
+					Chn->Anim2->GetBonePosition(BoneIndex, Time2, Chn->Looped, BP2, BO2);
 					if (Chn->SecondaryBlend == 1.0f)
 					{
 						BO = BO2;
@@ -473,6 +369,8 @@ void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 {
 	guard(CSkelMeshInstance::UpdateAnimation);
 
+	if (!pMesh) return;
+
 	// prepare bone-to-channel map
 	//?? optimize: update when animation changed only
 	for (int i = 0; i < pMesh->Skeleton.Num(); i++)
@@ -483,7 +381,7 @@ void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 	CAnimChan *Chn;
 	for (Stage = 0, Chn = Channels; Stage <= MaxAnimChannel; Stage++, Chn++)
 	{
-		if (Stage > 0 && Chn->AnimIndex1 == ANIM_UNASSIGNED)
+		if (Stage > 0 && !Chn->Anim1)
 			continue;
 		// update tweening
 		if (Chn->TweenTime)
@@ -499,41 +397,44 @@ void CSkelMeshInstance::UpdateAnimation(float TimeDelta)
 			assert(Chn->Time == 0);
 		}
 		// note: TweenTime may be changed now, check again
-		if (!Chn->TweenTime && Chn->AnimIndex1 >= 0)
+		if (!Chn->TweenTime && Chn->Anim1)
 		{
 			// update animation time
-			const CMeshAnimSeq *Seq1 = &pAnim->Sequences[Chn->AnimIndex1];
-			const CMeshAnimSeq *Seq2 = (Chn->AnimIndex2 >= 0 && Chn->SecondaryBlend)
-				? &pAnim->Sequences[Chn->AnimIndex2]
-				: NULL;
+			const CMeshAnimSeq *Seq1 = Chn->Anim1;
+			const CMeshAnimSeq *Seq2 = Chn->SecondaryBlend ? Chn->Anim2 : NULL;
 
 			float Rate1 = Chn->Rate * Seq1->Rate;
 			if (Seq2)
 			{
 				// if blending 2 channels, should adjust animation rate
-				Rate1 = Lerp(Seq1->Rate / Seq1->NumFrames, Seq2->Rate / Seq2->NumFrames, Chn->SecondaryBlend)
-					* Seq1->NumFrames;
+				Rate1 = Lerp(Seq1->Rate / Seq1->NumFrames,
+							 Seq2->Rate / Seq2->NumFrames,
+							 Chn->SecondaryBlend) * Seq1->NumFrames;
 			}
 			Chn->Time += TimeDelta * Rate1;
 
 			if (Chn->Looped)
 			{
+				// wrap time
 				if (Chn->Time >= Seq1->NumFrames)
 				{
-					// wrap time
 					int numSkip = appFloor(Chn->Time / Seq1->NumFrames);
 					Chn->Time -= numSkip * Seq1->NumFrames;
+				}
+				else if (Chn->Time < 0)
+				{
+					// backward playback
+					int numSkip = appFloor(- Chn->Time / Seq1->NumFrames);
+					Chn->Time += numSkip * Seq1->NumFrames;
 				}
 			}
 			else
 			{
+				// clamp time
 				if (Chn->Time >= Seq1->NumFrames-1)
-				{
-					// clamp time
 					Chn->Time = Seq1->NumFrames-1;
-					if (Chn->Time < 0)
-						Chn->Time = 0;
-				}
+				if (Chn->Time < 0)		// 2 cases: NumFrames=0 or backward animation playback
+					Chn->Time = 0;
 			}
 		}
 		// assign bones to channel
@@ -562,12 +463,12 @@ void CSkelMeshInstance::PlayAnimInternal(const char *AnimName, float Rate, float
 	if (Channel > MaxAnimChannel)
 		MaxAnimChannel = Channel;
 
-	int NewAnimIndex = FindAnim(AnimName);
-	if (NewAnimIndex < 0)
+	const CMeshAnimSeq *NewAnim = FindAnim(AnimName);
+	if (!NewAnim)
 	{
 		// show default pose
-		Chn.AnimIndex1     = -1;
-		Chn.AnimIndex2     = -1;
+		Chn.Anim1          = NULL;
+		Chn.Anim2          = NULL;
 		Chn.Time           = 0;
 		Chn.Rate           = 0;
 		Chn.Looped         = false;
@@ -579,14 +480,14 @@ void CSkelMeshInstance::PlayAnimInternal(const char *AnimName, float Rate, float
 	Chn.Rate   = Rate;
 	Chn.Looped = Looped;
 
-	if (NewAnimIndex == Chn.AnimIndex1 && Looped)
+	if (NewAnim == Chn.Anim1 && Looped)
 	{
 		// animation not changed, just set some flags (above)
 		return;
 	}
 
-	Chn.AnimIndex1     = NewAnimIndex;
-	Chn.AnimIndex2     = -1;
+	Chn.Anim1          = NewAnim;
+	Chn.Anim2          = NULL;
 	Chn.Time           = 0;
 	Chn.SecondaryBlend = 0;
 	Chn.TweenTime      = TweenTime;
@@ -605,7 +506,7 @@ void CSkelMeshInstance::SetBlendParams(int Channel, float BlendAlpha, const char
 	Chn.RootBone = 0;
 	if (BoneName)
 	{
-		Chn.RootBone = FindBone(BoneName);
+		Chn.RootBone = pMesh->FindBone(BoneName);
 		if (Chn.RootBone < 0)	// bone not found -- ignore animation
 			Chn.BlendAlpha = 0;
 	}
@@ -625,7 +526,7 @@ void CSkelMeshInstance::SetSecondaryAnim(int Channel, const char *AnimName)
 {
 	guard(CSkelMeshInstance::SetSecondaryAnim);
 	CAnimChan &Chn = GetStage(Channel);
-	Chn.AnimIndex2     = FindAnim(AnimName);
+	Chn.Anim2          = FindAnim(AnimName);
 	Chn.SecondaryBlend = 0;
 	unguard;
 }
@@ -645,7 +546,7 @@ void CSkelMeshInstance::GetAnimParams(int Channel, const char *&AnimName,
 	guard(CSkelMeshInstance::GetAnimParams);
 
 	const CAnimChan &Chn  = GetStage(Channel);
-	if (!pAnim || Chn.AnimIndex1 < 0 || Channel > MaxAnimChannel)
+	if (!pAnim || !Chn.Anim1 || Channel > MaxAnimChannel)
 	{
 		AnimName  = "None";
 		Frame     = 0;
@@ -653,11 +554,10 @@ void CSkelMeshInstance::GetAnimParams(int Channel, const char *&AnimName,
 		Rate      = 0;
 		return;
 	}
-	const CMeshAnimSeq &AnimSeq = pAnim->Sequences[Chn.AnimIndex1];
-	AnimName  = AnimSeq.Name;
+	AnimName  = Chn.Anim1->Name;
 	Frame     = Chn.Time;
-	NumFrames = AnimSeq.NumFrames;
-	Rate      = AnimSeq.Rate * Chn.Rate;
+	NumFrames = Chn.Anim1->NumFrames;
+	Rate      = Chn.Anim1->Rate * Chn.Rate;
 
 	unguard;
 }
@@ -666,6 +566,8 @@ void CSkelMeshInstance::GetAnimParams(int Channel, const char *&AnimName,
 /*-----------------------------------------------------------------------------
 	Drawing
 -----------------------------------------------------------------------------*/
+
+#if EDITOR
 
 void CSkelMeshInstance::DrawSkeleton(bool ShowLabels)
 {
@@ -681,23 +583,20 @@ void CSkelMeshInstance::DrawSkeleton(bool ShowLabels)
 		const CMeshBone &B  = pMesh->Skeleton[i];
 		const CCoords   &BC = BoneData[i].Coords;
 
-		CVec3 v2;
-		v2.Set(10, 0, 0);
-		BC.UnTransformPoint(v2, v2);
-
 		CVec3 v1;
 		if (i > 0)
 		{
-			glColor3f(1,1,0.3);
-			//!! REMOVE LATER:
+#if SHOW_BONE_UPDATES
 			int t = BoneUpdateCounts[i];
 			glColor3f(t & 1, (t >> 1) & 1, (t >> 2) & 1);
-			//!! ^^^^^^^^^^^^^
+#else
+			glColor3f(1, 1, 0.3);
+#endif
 			v1 = BoneData[B.ParentIndex].Coords.origin;
 		}
 		else
 		{
-			glColor3f(1,0,1);
+			glColor3f(1, 0, 1);
 			v1.Zero();
 		}
 		glVertex3fv(v1.v);
@@ -705,8 +604,7 @@ void CSkelMeshInstance::DrawSkeleton(bool ShowLabels)
 		if (ShowLabels)
 		{
 			// show bone label
-			v1.Add(BC.origin);
-			v1.Scale(0.5f);
+			Lerp(v1, BC.origin, 0.5f, v1);			// center point between v1 and BC.origin
 			DrawText3D(v1, S_YELLOW"%s", *B.Name);
 		}
 	}
@@ -717,6 +615,45 @@ void CSkelMeshInstance::DrawSkeleton(bool ShowLabels)
 	glDisable(GL_LINE_SMOOTH);
 
 	unguard;
+}
+
+
+void CSkelMeshInstance::DrawBoxes(int highlight)
+{
+	glDisable(GL_TEXTURE_2D);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	for (int i = 0; i < pMesh->BoundingBoxes.Num(); i++)
+	{
+		// convert box to model space
+		const CMeshHitBox &H = pMesh->BoundingBoxes[i];
+		CCoords Box;
+		BoneData[H.BoneIndex].Coords.UnTransformCoords(H.Coords, Box);
+
+#define A	-0.5f
+#define B	 0.5f
+		static const CVec3 srcPoints[8] = {
+			{A,A,A}, {A,B,A}, {B,B,A}, {B,A,A},
+			{A,A,B}, {A,B,B}, {B,B,B}, {B,A,B}
+		};
+#undef A
+#undef B
+		static const int inds[24] = {
+			0,1, 1,2, 2,3, 3,0,		// rect1
+			4,5, 5,6, 6,7, 7,4,		// rect2
+			0,4, 1,5, 2,6, 3,7		// connectors
+		};
+		CVec3 verts[8];
+		for (int j = 0; j < 8; j++)
+			Box.UnTransformPoint(srcPoints[j], verts[j]);
+		if (i == highlight)
+			glColor3f(0.7, 0.8, 1);
+		else
+			glColor3f(0.25, 0.32, 1);
+		glVertexPointer(3, GL_FLOAT, sizeof(CVec3), verts);
+		glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, inds);
+	}
+	glColor3f(1, 1, 1);
+	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 
@@ -754,7 +691,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals, bool Texturing)
 		CCoords Transform;
 		Transform.Zero();
 		const CMeshPoint &P = Lod.Points[i];
-		// prepare weighted transofrmation
+		// prepare weighted transfîrmation
 		for (int j = 0; j < MAX_VERTEX_INFLUENCES; j++)
 		{
 			const CPointWeight &W = P.Influences[j];
@@ -828,3 +765,5 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals, bool Texturing)
 
 	unguard;
 }
+
+#endif

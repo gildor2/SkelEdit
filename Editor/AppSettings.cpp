@@ -14,8 +14,6 @@
 	Application settings
 -----------------------------------------------------------------------------*/
 
-#define CONFIG_FILE			"config.cfg"
-
 CAppSettings GCfg;
 
 void PutFramePos(wxTopLevelWindow *Frame, CWndPos &Pos)
@@ -51,18 +49,23 @@ void SetFramePos(wxTopLevelWindow *Frame, CWndPos &Pos)
 
 void SaveSettings()
 {
+	guard(SaveSettings);
 	COutputDeviceFile Out(CONFIG_FILE, true);
 	FindStruct("AppSettings")->WriteText(&Out, &GCfg);
+	unguard;
 }
 
 bool LoadSettings()
 {
+	guard(LoadSettings);
 	const char *file = (char*)LoadFile(CONFIG_FILE);
 	if (!file)
 		return false;
 	FindStruct("AppSettings")->ReadText(file, &GCfg);
+	delete file;
 	GRootDir = GCfg.ResourceRoot;
 	return true;
+	unguard;
 }
 
 
@@ -73,25 +76,29 @@ bool LoadSettings()
 class WSettingsEditor : public wxDialog
 {
 public:
-	WPropEdit	*mEditor;
+	WPropEdit	*m_editor;
 
 	WSettingsEditor(wxFrame *parent)
 	:	wxDialog(parent, wxID_ANY, "Preferences", wxDefaultPosition, wxSize(300, 200),
 				 wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 	{
 		guard(WSettingsEditor::WSettingsEditor);
-		mEditor = new WPropEdit(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-			wxPG_BOLD_MODIFIED | wxSUNKEN_BORDER | wxPG_DEFAULT_STYLE);
-		mEditor->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
-		mEditor->AttachObject(FindStruct("AppSettings"), &GCfg);
+		m_editor = new WPropEdit(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+			/*wxPG_BOLD_MODIFIED |*/ wxSUNKEN_BORDER | wxPG_DEFAULT_STYLE);
+		m_editor->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
+		m_editor->AttachObject(FindStruct("AppSettings"), &GCfg);
 		// when window is not resized after creation, PropEdit will be created
 		// in incorrect size (very small window); to fix it, we should resize
 		// dialog
 		SetSize(320, 200);
 		// restore splitter position
 		if (GCfg.PrefsPropSplitter)
-			mEditor->SetSplitterPosition(GCfg.PrefsPropSplitter);
+			m_editor->SetSplitterPosition(GCfg.PrefsPropSplitter);
 		unguard;
+	}
+	~WSettingsEditor()
+	{
+		delete m_editor;
 	}
 };
 
@@ -111,5 +118,5 @@ void EditSettings(wxFrame *parent)
 	// save settings
 	GRootDir = GCfg.ResourceRoot;
 	PutFramePos(SettingsEditor, GCfg.SettingsFramePos);
-	GCfg.PrefsPropSplitter = SettingsEditor->mEditor->GetSplitterPosition();
+	GCfg.PrefsPropSplitter = SettingsEditor->m_editor->GetSplitterPosition();
 }

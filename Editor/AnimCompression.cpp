@@ -60,11 +60,11 @@ void RemoveRedundantKeys(CAnimSet &Anim)
 				Track.KeyQuat.Remove(1, numKeys - 1);
 				numRemovedKeys += numKeys - 1;
 			}
-			// compare KeyPos
 			//!! note: can remove KeyPos when Anim.AnimRotationOnly==true, but:
 			//!! 1) this is unrecoverable, and should be performed manually
 			//!! 2) should be done AFTER importing and some editing of AnimSet, i.e. executed manually
 			//!! this may be done as part of key reduction with lerping
+			// compare KeyPos
 			remove = true;
 			CVec3 &V0 = Track.KeyPos[0];
 			numKeys = Track.KeyPos.Num();

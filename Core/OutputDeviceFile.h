@@ -1,3 +1,6 @@
+#ifndef __OUTPUTDEVICEFILE_H__
+#define __OUTPUTDEVICEFILE_H__
+
 
 // Will automatically create directory for file
 class COutputDeviceFile : public COutputDevice
@@ -62,3 +65,6 @@ public:
 		log = stdout;
 	}
 };
+
+
+#endif // __OUTPUTDEVICEFILE_H__

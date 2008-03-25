@@ -1,3 +1,7 @@
+#ifndef __OUTPUTDEVICEMEM_H__
+#define __OUTPUTDEVICEMEM_H__
+
+
 class COutputDeviceMem : public COutputDevice
 {
 protected:
@@ -38,3 +42,6 @@ public:
 		buffer[used] = 0;
 	}
 };
+
+
+#endif // __OUTPUTDEVICEMEM_H__

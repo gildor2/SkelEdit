@@ -13,8 +13,8 @@ class CSkelMeshInstance
 {
 	struct CAnimChan
 	{
-		int			AnimIndex1;		// current animation sequence; -1 for default pose
-		int			AnimIndex2;		// secondary animation for blending with; -1 = not used
+		const CMeshAnimSeq *Anim1;	// current animation sequence; NULL for default pose
+		const CMeshAnimSeq *Anim2;	// secondary animation for blending with; -1 = not used
 		float		Time;			// current animation frame for primary animation
 		float		SecondaryBlend;	// value = 0 (use primary animation) .. 1 (use secondary animation)
 		float		BlendAlpha;		// blend with previous channels; 0 = not affected, 1 = fully affected
@@ -27,10 +27,10 @@ class CSkelMeshInstance
 
 public:
 	// mesh state
-	int				LodNum;
+	int					LodNum;
 	// linked data
-	CSkeletalMesh	*pMesh;
-	CAnimSet		*pAnim;
+	const CSkeletalMesh	*pMesh;
+	const CAnimSet		*pAnim;
 
 	CSkelMeshInstance()
 	:	LodNum(-1)
@@ -46,14 +46,17 @@ public:
 
 	virtual ~CSkelMeshInstance();
 
-	void SetMesh(CSkeletalMesh *Mesh);
-	void SetAnim(CAnimSet *Anim);
+	void SetMesh(const CSkeletalMesh *Mesh);
+	void SetAnim(const CAnimSet *Anim);
 
 	void ClearSkelAnims();
 //??	void StopAnimating(bool ClearAllButBase);
 
+#if EDITOR
 	void DrawSkeleton(bool ShowLabels);
+	void DrawBoxes(int highlight = -1);
 	void DrawMesh(bool Wireframe, bool Normals, bool Texturing);
+#endif
 
 	// skeleton configuration
 	void SetBoneScale(const char *BoneName, float scale = 1.0f);
@@ -132,6 +135,9 @@ public:
 		unguard;
 	}
 
+	const CCoords &GetBoneCoords(int BoneIndex) const;
+	const CCoords &GetBoneTransform(int BoneIndex) const;
+
 	void UpdateAnimation(float TimeDelta);
 
 protected:
@@ -153,8 +159,7 @@ protected:
 		assert(StageIndex >= 0 && StageIndex < MAX_SKELANIMCHANNELS);
 		return Channels[StageIndex];
 	}
-	int FindBone(const char *BoneName) const;
-	int FindAnim(const char *AnimName) const;
+	const CMeshAnimSeq *FindAnim(const char *AnimName) const;
 	void PlayAnimInternal(const char *AnimName, float Rate, float TweenTime, int Channel, bool Looped);
 	void UpdateSkeleton();
 };

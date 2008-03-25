@@ -20,23 +20,20 @@
 #define MAX_DIST		2048
 
 #define FONT_TEX_NUM	1
-#define TEXT_LEFT		4
-#define TEXT_TOP		4
+
 
 namespace GL
 {
 	bool  is2Dmode = false;
 	// view params (const)
-	float zNear = 4;			// near clipping plane
-	float zFar  = 4096;			// far clipping plane
+	float zNear = 4;			///< near clipping plane
+	float zFar  = 4096;			///< far clipping plane
 	float yFov  = 80;
-	float tFovX, tFovY;			// tan(fov_x|y)
-	bool  invertXAxis = false;
+	float tFovX, tFovY;			///< tan(fov_x|y)
+	bool  invertXAxis = false;	///< when 'false' - use right-hand coordinates; when 'true' - left-hand
 	// window size
 	int   width  = 800;
 	int   height = 600;
-	// text output position
-	int   textX, textY;
 	// matrices
 	float projectionMatrix[4][4];
 	float modelMatrix[4][4];
@@ -60,8 +57,6 @@ namespace GL
 	{
 		if (is2Dmode && !force) return;
 		is2Dmode = true;
-		textX = TEXT_LEFT;
-		textY = TEXT_TOP;
 
 		glViewport(0, 0, width, height);
 		glScissor(0, 0, width, height);
@@ -93,7 +88,11 @@ namespace GL
 	{
 		viewAngles.Set(0, 180, 0);
 		viewDist = DEFAULT_DIST * distScale;
+#if !RIPOSTE_COORDS
 		viewOrigin.Set(DEFAULT_DIST * distScale, 0, 0);
+#else
+		viewOrigin.Set(0, 0, DEFAULT_DIST * distScale);
+#endif
 		viewOrigin.Add(viewOffset);
 		rotOrigin.Zero();
 	}
@@ -193,48 +192,6 @@ namespace GL
 		glEnd();
 	}
 
-	void text(const char *text)
-	{
-		int color = 7;
-
-		while (char c = *text++)
-		{
-			if (c == '\n')
-			{
-				textX =  TEXT_LEFT;
-				textY += CHAR_HEIGHT;
-				continue;
-			}
-			if (c == COLOR_ESCAPE)
-			{
-				char c2 = *text;
-				if (c2 >= '0' && c2 <= '7')
-				{
-					color = c2 - '0';
-					text++;
-					continue;
-				}
-			}
-			DrawChar(c, color, textX, textY);
-			textX += CHAR_WIDTH;
-		}
-	}
-
-#define FORMAT_BUF(fmt,buf)		\
-	va_list	argptr;				\
-	va_start(argptr, fmt);		\
-	char msg[4096];				\
-	vsnprintf(ARRAY_ARG(buf), fmt, argptr); \
-	va_end(argptr);
-
-
-	void textf(const char *fmt, ...)
-	{
-		FORMAT_BUF(fmt, msg);
-		text(msg);
-	}
-
-
 	//-------------------------------------------------------------------------
 	// called when window resized
 	void OnResize(int w, int h)
@@ -268,6 +225,18 @@ namespace GL
 			mouseButtons &= ~mask;
 	}
 
+	inline void ComputeViewAxis(CAxis &dst)
+	{
+#if !RIPOSTE_COORDS
+		Euler2Vecs(viewAngles, &dst[0], &dst[1], &dst[2]);
+#else
+		Euler2Vecs(viewAngles, &dst[0], &dst[1], &dst[2]);
+		static const CAxis cvt = {
+			0, 1, 0,   0, 0, 1,   1, 0, 0
+		};
+		cvt.TransformAxis(dst, dst);
+#endif
+	}
 
 	void OnMouseMove(int dx, int dy)
 	{
@@ -290,15 +259,15 @@ namespace GL
 		if (mouseButtons & MOUSE_BUTTON(MOUSE_RIGHT))
 		{
 			// change distance to object
-			viewDist += yDelta * 400;
+			viewDist += yDelta * 400 * distScale;
 		}
 		CAxis axis;
-		axis.FromEuler(viewAngles);
+		ComputeViewAxis(axis);
 		if (mouseButtons & MOUSE_BUTTON(MOUSE_MIDDLE))
 		{
 			// pan camera
-			VectorMA(rotOrigin, xDelta * viewDist * 2, axis[1]);
-			VectorMA(rotOrigin, yDelta * viewDist * 2, axis[2]);
+			VectorMA(rotOrigin, -xDelta * viewDist * 2, axis[1]);
+			VectorMA(rotOrigin,  yDelta * viewDist * 2, axis[2]);
 		}
 		viewDist = bound(viewDist, 10 * distScale, MAX_DIST * distScale);
 		VectorScale(axis[0], -viewDist, viewOrigin);
@@ -310,10 +279,11 @@ namespace GL
 	//-------------------------------------------------------------------------
 	// Building modelview and projection matrices
 	//-------------------------------------------------------------------------
+
 	void BuildMatrices()
 	{
 		// view angles -> view axis
-		Euler2Vecs(viewAngles, &viewAxis[0], &viewAxis[1], &viewAxis[2]);
+		ComputeViewAxis(viewAxis);
 		if (!invertXAxis)
 			viewAxis[1].Negate();
 //		textf("origin: %6.1f %6.1f %6.1f\n", VECTOR_ARG(viewOrigin));
@@ -361,18 +331,18 @@ namespace GL
 				modelMatrix[i][j] = s;
 			}
 #if 0
-#define m matrix // modelMatrix
-		textf("----- modelview matrix ------\n");
+#define m modelMatrix
+		DrawTextLeft("----- modelview matrix ------");
 		for (i = 0; i < 4; i++)
-			textf("{%9.4g, %9.4g, %9.4g, %9.4g}\n", m[0][i], m[1][i], m[2][i], m[3][i]);
+			DrawTextLeft("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][i], m[1][i], m[2][i], m[3][i]);
 #undef m
 #endif
 
 		// compute projection matrix
 		tFovY = tan(yFov * M_PI / 360.0f);
 		tFovX = tFovY / height * width; // tan(xFov * M_PI / 360.0f);
-		float zMin = zNear;
-		float zMax = zFar;
+		float zMin = zNear * distScale;
+		float zMax = zFar  * distScale;
 		float xMin = -zMin * tFovX;
 		float xMax =  zMin * tFovX;
 		float yMin = -zMin * tFovY;
@@ -396,12 +366,12 @@ namespace GL
 		m[3][2] = -2.0f * zMin * zMax / (zMax - zMin);	// F
 
 #if 0
-		textf("zFar: %g;  frustum: x[%g, %g] y[%g, %g]\n", zFar, xMin, xMax, yMin, yMax);
-		textf("----- projection matrix -----\n");
-		textf("{%9.4g, %9.4g, %9.4g, %9.4g}\n", m[0][0], m[1][0], m[2][0], m[3][0]);
-		textf("{%9.4g, %9.4g, %9.4g, %9.4g}\n", m[0][1], m[1][1], m[2][1], m[3][1]);
-		textf("{%9.4g, %9.4g, %9.4g, %9.4g}\n", m[0][2], m[1][2], m[2][2], m[3][2]);
-		textf("{%9.4g, %9.4g, %9.4g, %9.4g}\n", m[0][3], m[1][3], m[2][3], m[3][3]);
+		DrawTextLeft("zFar: %g;  frustum: x[%g, %g] y[%g, %g]", zFar, xMin, xMax, yMin, yMax);
+		DrawTextLeft("----- projection matrix -----");
+		DrawTextLeft("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][0], m[1][0], m[2][0], m[3][0]);
+		DrawTextLeft("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][1], m[1][1], m[2][1], m[3][1]);
+		DrawTextLeft("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][2], m[1][2], m[2][2], m[3][2]);
+		DrawTextLeft("{%9.4g, %9.4g, %9.4g, %9.4g}", m[0][3], m[1][3], m[2][3], m[3][3]);
 #endif
 #undef m
 	}
@@ -515,6 +485,13 @@ void DrawTextPos(int x, int y, const char *text)
 }
 
 
+#define FORMAT_BUF(fmt,buf)		\
+	va_list	argptr;				\
+	va_start(argptr, fmt);		\
+	char buf[4096];				\
+	vsnprintf(ARRAY_ARG(buf), fmt, argptr); \
+	va_end(argptr);
+
 void DrawTextLeft(const char *text, ...)
 {
 	int w, h;
@@ -537,14 +514,13 @@ void DrawTextRight(const char *text, ...)
 }
 
 
-// Project 3D point to screen coordinates; return false when not in view frustum
-static bool ProjectToScreen(const CVec3 &pos, int scr[2])
+bool ProjectToScreen(const CVec3 &pos, float scr[2])
 {
 	CVec3	vec;
 	VectorSubtract(pos, GL::viewOrigin, vec);
 
 	float z = dot(vec, GL::viewAxis[0]);
-	if (z <= GL::zNear) return false;			// not visible
+	if (z <= GL::zNear * GL::distScale) return false;	// not visible
 
 	float x = dot(vec, GL::viewAxis[1]) / z / GL::tFovX;
 	if (x < -1 || x > 1) return false;
@@ -552,9 +528,20 @@ static bool ProjectToScreen(const CVec3 &pos, int scr[2])
 	float y = dot(vec, GL::viewAxis[2]) / z / GL::tFovY;
 	if (y < -1 || y > 1) return false;
 
-	scr[0] = appRound(/*GL::x + */ GL::width  * (0.5 - x / 2));
-	scr[1] = appRound(/*GL::y + */ GL::height * (0.5 - y / 2));
+	scr[0] = GL::width  * (0.5 - x / 2);
+	scr[1] = GL::height * (0.5 - y / 2);
 
+	return true;
+}
+
+
+bool ProjectToScreen(const CVec3 &pos, int scr[2])
+{
+	float v[2];
+	if (!ProjectToScreen(pos, v))
+		return false;
+	scr[0] = appRound(v[0]);
+	scr[1] = appRound(v[1]);
 	return true;
 }
 

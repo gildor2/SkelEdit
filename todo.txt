@@ -1,4 +1,42 @@
+- Sockets:
+  - display as 1) special shape (in ADDITION to gizmo), 2) preview as mesh
+  - add "Show sockets" toolbar/menu
+
+- SEPARATE_MEMSPACE: appFree() can use rtl::Free() instead of MemSpace::Free() -- this
+  will automatically deallocate memory in right memspace.
+  Currently: appFree() will use g_mem.Free(), which will cause an error when freing
+  block, allocated in other memspace.
+  * it's possible to allocate CSkeletalMesh from Riposte code, this will use RTL
+    allocator for CSkeletalMesh class, but (check! may be other because of inlines!)
+    appAlloc() for internal arrays; arrays allocated from 'virtual Serialize()', which
+    should be placed somewhere in animation system obj files and use appAlloc().
+
+? when changing resource root, should update property editors (or reconnect mesh?)
+  (should reload mesh textures)
+
+- mesh/anim import: when importing mesh/anim, specify:
+  - max/maya coordinate system (mesh only, for rotation)
+  ? mesh/anim scale: specify unit: meter (default), sm (unreal?), inch -- scale mesh
+    (skeleton and vertexes) and anim (position track), not just setup MeshScale
+
+- editor:
+  - implement simple bumpmapping
+    http://www.paulsprojects.net/tutorials/simplebump/simplebump.html
+  - animation playback:
+    - reverse playback: may be, tween (start anim) to LAST frame (not first) when
+      animation is not looped
+    - in-editor reverse playback: when pressing <Play> button, slider set to 0, but
+      should set to last frame when anim is not looped (detect by Rate < 0 ?)
+  ! redesign save/load code; create CArchiveMem, save mesh/animset/animtree to it,
+    compare with file on disk, and:
+    1) do not produce 'autosave' on crash when files are same
+    2) ask 'object modified, save?' on exit or load another object
+  - add "Textures Directory" to settings, should specify kind of resource in "#FILENAME"
+    tag in .uc
+
 ! typeinfo:
+  - when importing typeinfo.bin, compare generated class sizes with size, which can
+    be computed with DECLARE_CLASS() macro (verify typeinfo.bin correctness/version)
   - WriteAsText/ReadAsText
     - can use for copy/paste in editor
     - serialize array: can specify array size for optimized loading
@@ -10,26 +48,21 @@
   ? implement typeinfo + editor for 'array<string[size]> name' and
     'string[size] name[dim]' -- requires separate string size and array size fields;
     use instead of AnimBone
-  ? special string: "BoneName" -- create enum for this with filled bone names
-    a) cpecial callback interface for object: enumerate prop values by string_id;
-       example: "#ENUM BoneName"
-    b) (BETTER!): specify field, which will be iterated for list of bones; example
-      (for SkeletalMesh): "#ENUM Skeleton.Name" -- will iterate 'Skeleton' array and
-      lookup for 'Name' field; note: requires, that one and only one field in path
-      should be an array, everything other should be a structures!
 
 - mesh optimization:
-  - remove bones without bound verts (note: should provide a way to
-    keep "special" bones for attachments)
+  - remove bones without bound verts
+    - note: should provide a way to keep "special" bones for attachments)
+    ? may be, remove bones "by hand"
   - normalize bone names:
     - remove "BipNN" prefix
     - replace " " with "_"
     - lowercase
+    * NOTE: do it for both mesh and AnimSet
   - animation compression:
     - UI to select animations to compress
     - ability to completely remove position tracks (MeshInstance should use
       position from refpose in that case, even if AnimRotationOnly==false)
-    - info about compressed/uncompressed memory requirements for each
+    *? info about compressed/uncompressed memory requirements for each
       animation and total
     - set error thresholds for key comparison (pos, quat)
       - size error as % of whole mesh size or as absolute value
@@ -41,6 +74,7 @@
     - try compressed quaternions
     - try delta compression + quantization (fixed point type); can store scale to
       improve precision
+    - UnrealEd4 has ability to visually compare compressed and uncompressed animations
 
 - data validation:
   ? check automatically before mesh/anim saving
@@ -68,6 +102,8 @@
 
 - uc parser:
   - CPP: code to verify class sizes and field offsets
+  - field flag: "editparentvisible" (?): when set, field becomes visible in propgrid
+    container item instead of "..." text (useful for Vec3, Rotator etc)
 
 - UI:
   - for mesh/anim: "... was modified, save?" before open/import/quit
@@ -99,10 +135,10 @@
         [1]     | Name2
   - editor for Rotator (degrees instead of 0..65535)
   - editor for Vector (value as 'X=...,Y=...,Z=...')
-  - short and unsigned ints
-  - spin edits for numbers (if possible - ala 3DSMax or UnrealEd, with mouse
-    movement capture)
-  - editor for TArray<>: add/move/delete items
+    ! check universal "editparentvisible" flag too
+  - short ints
+  - spin edits for numbers (if possible - ala 3DSMax or UnrealEd, with mouse movement capture)
+  - editor for TArray<>: move items
 
 - logging:
   - log_file should be overwritten every new start
@@ -110,3 +146,37 @@
 
 - viewport:
   - show floor
+    * may be required for IK testing
+
+- check: may be, Core/Commands.* not needed - remove them
+  - note: added to project for .ssi parsing
+
+- hitbox:
+  - phmaterial is not filename, should be an string enumeration
+  - can specify values for phmaterial from "setting" dialog, as set of strings, and use as
+    enumeration (ComboBox, not Choice -- editable value with possible selection from list)
+
+- Riposte:
+  - implement .ssi support:
+    - select .ssi instead of .tga/.bmp etc
+    - parse .ssi to extract texture (and bumpmap?) filename
+  - TMMesh::m_bEnableMarks (setup in LoadFromSKM()) -- read from SkeletalMesh, best way -
+    encode as property with CObject serialization
+    ! BUT: serialization of properties using typeinfo will require to load this typeinfo
+      into game too (currently - editor only)
+      - one of problem: where to put typeinfo.bin
+  - msh_fileio.cpp:
+    - check GetModelLODCount()
+    - check "ft_dam" const usage
+    - eg_precaching.cpp, AnimResource: should precache .skm files (check Renderer()->CreateMesh()
+      call)
+    - read m_bEnableMarks; can analyze this in k_decals too
+    - included "Core.h", which disables some VC warnings -- try to workaround
+      - create special include file, which will include "Core.h" and "AnimClasses.h" for use from
+        riposte engine (not from new doll subsystem)
+  - skel_doll.cpp:
+    - currently launches predefined animation
+    - forces "basephmtrl/meat/vinous" for all hitboxes
+  - TMIDE:
+    - should not crash when trying to load invalid file -- should log error + return NULL (use as
+      empty mesh/anim)

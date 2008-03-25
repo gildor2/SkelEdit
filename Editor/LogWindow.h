@@ -24,20 +24,7 @@ public:
 	char		buf[MAX_LOG_LINE];
 	int			cursor;
 
-	/**
-	 *	Constructor/destructor
-	 */
-	WLogWindow(wxFrame *parent)
-	:	wxLogWindow(parent, "System Log", false)
-	,	pParent(parent)
-	,	cursor(0)
-	{
-		wxLog::SetActiveTarget(this);
-	}
-	virtual ~WLogWindow()
-	{
-		wxLog::SetActiveTarget(NULL);
-	}
+	WLogWindow(wxFrame *parent);
 
 	/**
 	 *	COutputDevice methods

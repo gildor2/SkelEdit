@@ -17,9 +17,10 @@
 sub PROP_EDITABLE	{ return 1;  }
 sub PROP_EDITCONST	{ return 2;  }
 sub PROP_NORESIZE	{ return 4;  }
-sub PROP_NOEXPORT	{ return 8;  }
-sub PROP_TRANSIENT	{ return 16; }
-sub PROP_NATIVE		{ return 32; }
+sub PROP_NOADD		{ return 8;  }
+sub PROP_NOEXPORT	{ return 16; }
+sub PROP_TRANSIENT	{ return 32; }
+sub PROP_NATIVE		{ return 64; }
 
 
 # prefixes
@@ -58,6 +59,7 @@ $COMMENT = "";
 $COMMENT_COUNT = 100;			# some large value
 $LINE_NO = 0;
 
+$VC_ERRORS = 0;					# display errors in VisualC-like manner
 
 $S_RED     = "\033[1;31m";
 $S_YELLOW  = "\033[1;33m";
@@ -70,11 +72,19 @@ sub ParseError {
 	close(TYPE);
 	unlink("$h_file");
 	unlink("$type_file");
-	die "${S_RED}${FILE_NAME} : ${LINE_NO} : error : $_[0]${S_DEFAULT}\n";
+	if (!$VC_ERRORS) {
+		die "${S_RED}${FILE_NAME} : ${LINE_NO} : error : $_[0]${S_DEFAULT}\n";
+	} else {
+		die "${FILE_PATH}/${FILE_NAME}(${LINE_NO}) : error X0000: $_[0]\n";
+	}
 }
 
 sub ParseWarning {
-	print STDERR "${S_YELLOW}${FILE_NAME} : ${LINE_NO} : warning : $_[0]${S_DEFAULT}\n";
+	if (!$VC_ERRORS) {
+		print STDERR "${S_YELLOW}${FILE_NAME} : ${LINE_NO} : warning : $_[0]${S_DEFAULT}\n";
+	} else {
+		print STDERR "${FILE_PATH}/${FILE_NAME}(${LINE_NO}) : warning X0000: $_[0]\n";
+	}
 }
 
 sub CheckIdent {
@@ -232,6 +242,7 @@ sub TYPE_STRUCT { return 2; }
 sub TYPE_CLASS  { return 3; }
 
 %types = ();
+%knownClasses = ();
 
 # usage:
 #	RegisterType(ScriptName, NativeName, TypeKind)
@@ -265,6 +276,27 @@ sub GetTypeinfo {
 		ParseError("type \"$name\" is not defined");
 	}
 	return $rec;
+}
+
+
+sub RegisterClass {
+	my ($name, $path) = @_;
+	if ($knownClasses{$name})
+	{
+		ParseError("class $name ($path) is already declared in $knownClasses{$name}");
+	}
+	$knownClasses{$name} = $path;
+	RegisterType($name, $CLASS_PREFIX.$name, TYPE_CLASS);
+}
+
+
+sub IsClass {
+	my ($name) = $_[0];
+	if ($knownClasses{$name}) {
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 
@@ -395,12 +427,14 @@ sub GetScriptLine {
 }
 
 %defines = ();
+%abstracts = ();
 
 sub GetNumber {
 	my $num = $_[0];
 	return $num if $num =~ /^(\-)?[\d\.]+$/;
 	if (exists($defines{$num})) {
-		return $defines{$num};
+		$num = $defines{$num};
+		return $num if $num =~ /^(\-)?[\d\.]+$/;
 	}
 	ParseError("invalid number: $num");
 }
@@ -427,6 +461,8 @@ sub ParseClassHeader {
 			CheckIdent($CLASS_PARENT);
 		} elsif ($attrib eq "noexport") {
 			$NOCPP = 1;
+		} elsif ($attrib eq "abstract") {
+			$abstracts{$CLASS_NAME} = 1;
 		} else {
 			ParseError("unknown class attribute: \"$attrib\"");
 		}
@@ -504,6 +540,8 @@ sub ParseField {
 			$FLAGS |= PROP_EDITCONST;
 		} elsif ($tok eq "editfixedsize") {
 			$FLAGS |= PROP_NORESIZE;
+		} elsif ($tok eq "editnoadd") {
+			$FLAGS |= PROP_NOADD;
 		} elsif ($tok eq "noexport") {
 			$FLAGS |= PROP_NOEXPORT;
 		} elsif ($tok eq "transient") {
@@ -544,7 +582,13 @@ sub ParseField {
 		ExpectToken(">", NextTok());
 		CheckIdent($type);
 		my $typeInfo = GetTypeinfo($type);
-		$natType = "TArray<".$typeInfo->{natName}.">";
+		$natType = $typeInfo->{natName};
+		if ($typeInfo->{kind} == TYPE_CLASS) {
+			$natType .= "*";	# class -> pointer
+			$type =  "pointer";
+		}
+		$natType = "TArray<".$natType.">";
+		#?? array<string[size]> is not supported (C++: TArray<TString<size>>)
 	} elsif ($type eq "pointer") {
 		# "pointer" or "pointer<type>"
 		$tok = PeekTok();
@@ -562,6 +606,10 @@ sub ParseField {
 		CheckIdent($type);
 		my $typeInfo = GetTypeinfo($type);
 		$natType = $typeInfo->{natName};
+		if ($typeInfo->{kind} == TYPE_CLASS) {
+			$natType .= "*";	# class -> pointer
+			$type = "pointer";
+		}
 	}
 	# compute fine tabulations for C++ type-name declaration
 	my $typePad = GetTabs($natType, 28);
@@ -757,13 +805,13 @@ sub ParseStruct {
 }
 
 
-sub ParseConst{
+sub ParseConst {
 	my ($process) = @_;
 	# "const name value;"
 	my $name = GetToken();
 	CheckIdent($name);
 	ExpectToken("=", GetToken());
-	my $value = GetNumber(GetToken());
+	my $value = GetToken();
 	ExpectToken(";", GetToken());
 
 	if ($process) {
@@ -806,17 +854,22 @@ sub ParseFilePass {
 			return $CLASS_PARENT;
 		}
 	}
-	if ($ExportClass) {
-		RegisterType($CLASS_NAME, $CppName, TYPE_CLASS);
+	if ($ExportClass)
+	{
+#		RegisterType($CLASS_NAME, $CppName, TYPE_CLASS);
 		WriteBinTypeHdr($CLASS_NAME, TYPE_CLASS);
 		WriteBinString($CLASS_PARENT);
 	}
 
 	if ($PASS == 1 && !$NOCPP)
 	{
-		print CPP "/*------------------------------------------------------------------------------\n";
-		print CPP "\t$CppName class (declared in $FILE_NAME)\n";
-		print CPP "------------------------------------------------------------------------------*/\n\n";
+		print CPP <<EOF
+/*-----------------------------------------------------------------------------
+	$CppName class (declared in $FILE_NAME)
+-----------------------------------------------------------------------------*/
+
+EOF
+		;
 	}
 
 	if ($ExportClass && !$NOCPP)
@@ -919,6 +972,7 @@ Usage:
 Options:
   --force          ignore file times, always rebuild
   --type=<file>    generate typeinfo in <file>
+  --vc             use VisualC-like error message formatting
 EOF
 ;
 }
@@ -976,6 +1030,8 @@ while (@ARGV)
 		$forceRebuild = 1;
 	} elsif ($arg =~ /^--type/) {
 		($type_file) = $arg =~ /.*\=(.*)$/;
+	} elsif ($arg eq "--vc") {
+		$VC_ERRORS = 1;
 	} else {
 		print STDERR "ERROR: unknown option: $arg\n";
 		Usage();
@@ -1085,11 +1141,11 @@ for $dir (@ARGV)
 
 	# create headers prologue
 	print CPP <<EOF
-/*==============================================================================
+/*=============================================================================
 	C++ class definitions exported from script.
 	This is automatically generated by the tools.
 	DO NOT modify this manually! Edit the corresponding .uc files instead!
-==============================================================================*/
+=============================================================================*/
 
 
 EOF
@@ -1101,10 +1157,43 @@ EOF
 	$h_defName =~ s/\./_/g;
 	print CPP "#ifndef $h_defName\n#define $h_defName\n\n";
 
+	# remember all classes from current directory
+	print CPP <<EOF
+/*-----------------------------------------------------------------------------
+	Forward declarations
+-----------------------------------------------------------------------------*/
+
+EOF
+	;
+	for $f (@list) {
+		my (undef, $className) = $f =~ /(.*[\/\\]) ([^\\\/]+)\.uc/x;
+		RegisterClass($className, $f);
+		print CPP "class ${CLASS_PREFIX}${className};\n";
+	}
+	print CPP "\n\n";
+
 	for $f (@list) {
 		my (undef, $shortName) = $f =~ /(.*[\/\\]) ([^\\\/]+)/x;
 		ParseFile($shortName, 1);
 	}
+
+	# create REGISTER_..._CLASSES part
+	$ucDir = uc($dir);
+	print CPP <<EOF
+/*-----------------------------------------------------------------------------
+	Class registration
+-----------------------------------------------------------------------------*/
+
+EOF
+	;
+	print CPP "#define REGISTER_${ucDir}_CLASSES";
+	for $f (@list) {
+		my (undef, $className) = $f =~ /(.*[\/\\]) ([^\\\/]+)\.uc/x;
+		if (! $abstracts{$className}) {
+			print CPP " \\\n\tREGISTER_CLASS(${CLASS_PREFIX}${className})";
+		}
+	}
+	print CPP "\n\n\n";
 
 	# create header epilogue
 	print CPP "#endif // $h_defName\n";

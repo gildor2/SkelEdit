@@ -7,7 +7,6 @@ static void OutOfMemory()
 }
 
 
-
 void *appMalloc(int size)
 {
 	assert(size >= 0);
@@ -16,6 +15,16 @@ void *appMalloc(int size)
 		OutOfMemory();
 	if (size > 0)
 		memset(data, 0, size);
+	return data;
+}
+
+
+void *appRealloc(void *ptr, int size)
+{
+	assert(size >= 0);
+	void *data = realloc(ptr, size);
+	if (!data)
+		OutOfMemory();
 	return data;
 }
 
@@ -90,10 +99,10 @@ void *CMemoryChain::Alloc(size_t size, int alignment)
 }
 
 
-int CMemoryChain::GetSize()
+int CMemoryChain::GetSize() const
 {
 	int n = 0;
-	for (CMemoryChain *c = this; c; c = c->next)
+	for (const CMemoryChain *c = this; c; c = c->next)
 		n += c->size;
 	return n;
 }

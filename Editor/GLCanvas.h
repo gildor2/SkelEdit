@@ -9,6 +9,7 @@ class GLCanvas : public wxGLCanvas
 {
 public:
 	GLCanvas(wxWindow *parent);
+	virtual ~GLCanvas();
 	virtual void Render();
 
 protected:
@@ -19,10 +20,19 @@ protected:
 	void OnMouseLost(wxMouseCaptureLostEvent&);
 	void OnIdle(wxIdleEvent &event);
 
+	/**
+	 *	Hook function to process mouse events in derived classes. Function should
+	 *	return 'true' to prevent from further mouse processing.
+	 */
+	virtual bool ProcessMouse(bool leftDown, bool rightDown, int mouseX, int mouseY, int deltaX, int deltaY)
+	{
+		return false;
+	}
+
 private:
-	wxGLContext		*mContext;
-	long			mMouseX, mMouseY;
-	bool			mMouseLeft, mMouseRight, mMouseMid;
+	wxGLContext		*m_context;
+	long			m_mouseX, m_mouseY;
+	bool			m_mouseLeft, m_mouseRight, m_mouseMid;
 
 	DECLARE_EVENT_TABLE()
 };
