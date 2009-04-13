@@ -58,7 +58,7 @@ void SaveSettings()
 bool LoadSettings()
 {
 	guard(LoadSettings);
-	const char *file = (char*)LoadFile(CONFIG_FILE);
+	char *file = (char*)LoadFile(CONFIG_FILE);
 	if (!file)
 		return false;
 	FindStruct("AppSettings")->ReadText(file, &GCfg);

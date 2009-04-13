@@ -96,9 +96,10 @@ void CSkelMeshInstance::SetMesh(const CSkeletalMesh *Mesh)
 	pMesh = Mesh;
 
 	// get some counts
+	int i;
 	int NumBones = pMesh->Skeleton.Num();
 	int NumVerts = pMesh->Lods[0].Points.Num();	// data for software skinning
-	for (int i = 1; i < pMesh->Lods.Num(); i++)
+	for (i = 1; i < pMesh->Lods.Num(); i++)
 	{
 		if (NumVerts < pMesh->Lods[i].Points.Num())
 		{
@@ -118,7 +119,6 @@ void CSkelMeshInstance::SetMesh(const CSkeletalMesh *Mesh)
 	MeshVerts   = new CVec3        [NumVerts];
 	MeshNormals = new CVec3        [NumVerts];
 
-	int i;
 	CMeshBoneData *data;
 	for (i = 0, data = BoneData; i < NumBones; i++, data++)
 	{

@@ -88,11 +88,7 @@ namespace GL
 	{
 		viewAngles.Set(0, 180, 0);
 		viewDist = DEFAULT_DIST * distScale;
-#if !RIPOSTE_COORDS
 		viewOrigin.Set(DEFAULT_DIST * distScale, 0, 0);
-#else
-		viewOrigin.Set(0, 0, DEFAULT_DIST * distScale);
-#endif
 		viewOrigin.Add(viewOffset);
 		rotOrigin.Zero();
 	}
@@ -227,15 +223,7 @@ namespace GL
 
 	inline void ComputeViewAxis(CAxis &dst)
 	{
-#if !RIPOSTE_COORDS
 		Euler2Vecs(viewAngles, &dst[0], &dst[1], &dst[2]);
-#else
-		Euler2Vecs(viewAngles, &dst[0], &dst[1], &dst[2]);
-		static const CAxis cvt = {
-			0, 1, 0,   0, 0, 1,   1, 0, 0
-		};
-		cvt.TransformAxis(dst, dst);
-#endif
 	}
 
 	void OnMouseMove(int dx, int dy)

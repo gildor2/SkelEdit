@@ -192,7 +192,8 @@ var(Orientation)	Rotator	RotOrigin;
 /** Information for LOD levels */
 var() editnoadd		array<SkeletalMeshLod> Lods;
 /** Skeleton bones */
-var					array<MeshBone> Skeleton;
+//!! remove var()
+var()				array<MeshBone> Skeleton;
 /** Collision volumes */
 var(Extra Data) editnoadd array<MeshHitBox> BoundingBoxes;
 /** Attachment sockets */

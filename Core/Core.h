@@ -15,9 +15,6 @@
 #undef M_PI
 
 
-#define RIPOSTE_COORDS		1			// Y=up, 1 unit ~ 1 meter etc
-
-
 // forwards
 class CArchive;
 class CMemoryChain;
@@ -45,12 +42,10 @@ template<class T> inline void Exchange(T& A, T& B)
 	B = tmp;
 }
 
-#if !RIPOSTE
 template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*, const T*))
 {
 	qsort(array, count, sizeof(T), (int (*)(const void*, const void*)) cmpFunc);
 }
-#endif
 
 // field offset macros
 // get offset of the field in struc
@@ -88,6 +83,8 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 #define BYTES4(a,b,c,d)	((a) | ((b)<<8) | ((c)<<16) | ((d)<<24))
 
 
+#if _MSC_VER >= 1300
+// new VC
 #define assert(x)							\
 	if (!(x))								\
 	{										\
@@ -97,6 +94,17 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 				 "  line: %d",				\
 				 #x, __FILE__, __FUNCTION__, __LINE__); \
 	}
+#else
+// old VC6
+#define assert(x)							\
+	if (!(x))								\
+	{										\
+		appError("assertion failed: %s\n"	\
+				 "  file: %s\n"				\
+				 "  line: %d",				\
+				 #x, __FILE__, __LINE__);	\
+	}
+#endif
 
 #ifdef RETAIL
 // RETAIL build of game engine
@@ -208,8 +216,6 @@ void* appMalloc(int size);
 void* appRealloc(void *ptr, int size);
 void  appFree(void *ptr);
 
-#if !RIPOSTE
-
 FORCEINLINE void* operator new(size_t size)
 {
 	return appMalloc(size);
@@ -224,8 +230,6 @@ FORCEINLINE void operator delete(void* ptr)
 {
 	appFree(ptr);
 }
-
-#endif
 
 #define DEFAULT_ALIGNMENT	8
 #define MEM_CHUNK_SIZE		0x2000		// 8Kb

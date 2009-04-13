@@ -15,4 +15,4 @@ pkzipc -add $resfile -lev=9 -nozip -silent xrc/*.png xrc/*.xrc
 Tools/genmake $project TARGET=vc-win32 > $makefile
 
 # build
-vc32tools --version=8 --make $makefile
+vc32tools --version=6 --make $makefile

@@ -90,7 +90,7 @@ static int SortBones(const int *_B1, const int *_B2)
 	Importing PSK mesh
 -----------------------------------------------------------------------------*/
 
-static int SortInfluences(const CWeightInfo *const W1, const CWeightInfo *const W2)
+static int SortInfluences(const CWeightInfo * W1, const CWeightInfo * W2)
 {
 	float delta = W1->Weight - W2->Weight;
 	if (delta < 0)
@@ -319,9 +319,6 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		CMeshPoint &P = Lod.Points[i];
 		const VVertex &W = Wedges[i];
 		P.Point = Verts[W.PointIndex];
-#if RIPOSTE_COORDS
-		P.Point[0] *= -1;
-#endif
 		P.U     = W.U;
 		P.V     = W.V;
 		// mark influences as unused
@@ -406,11 +403,6 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		B.Position    = SB.BonePos.Position;
 		B.Orientation = SB.BonePos.Orientation;
 		B.ParentIndex = SB.ParentIndex;
-#if RIPOSTE_COORDS
-		B.Position[0]   *= -1;
-		B.Orientation.x *= -1;
-		B.Orientation.w *= -1;
-#endif
 	}
 	// sort bones by hierarchy
 	//!! should remap weights, if it is possible to resort bones (or remove unused bones)
@@ -629,11 +621,6 @@ void ImportPsa(CArchive &Ar, CAnimSet &Anim)
 	{
 		VQuatAnimKey &K = Keys[i];
 		Ar << K;
-#if RIPOSTE_COORDS
-		K.Position[0]   *= -1;
-		K.Orientation.x *= -1;
-		K.Orientation.w *= -1;
-#endif
 	}
 
 	if (!Ar.IsEof())

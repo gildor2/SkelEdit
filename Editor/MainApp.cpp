@@ -167,12 +167,7 @@ public:
 	,	m_noTexturing(false)
 	,	m_lastFrameTime(GetMilliseconds())
 	,	m_highlightBox(-1)
-	{
-#if RIPOSTE_COORDS
-		GL::SetDistScale(0.01f);
-		GL::invertXAxis = true;
-#endif
-	}
+	{}
 
 	virtual void Render()
 	{
@@ -200,18 +195,10 @@ public:
 				CVec3 tmp = nullVec3;
 				tmp[i] = 1;
 				glColor3fv(tmp.v);
-#if !RIPOSTE_COORDS
 				tmp[i] = 70;
-#else
-				tmp[i] = 0.5f;
-#endif
 				glVertex3fv(tmp.v);
 				glVertex3fv(nullVec3.v);
-#if !RIPOSTE_COORDS
 				tmp[i] = 75;
-#else
-				tmp[i] = 0.55f;
-#endif
 				static const char* labels[3] = {
 					"X", "Y", "Z"
 				};
@@ -592,7 +579,7 @@ protected:
 			m_animPosition->SetValue(appFloor(m_animFrame * SLIDER_TICKS_PER_FRAME));
 		}
 		// update animation
-		const char *wantAnim = m_showRefpose ? "None" : m_currAnim->Name;
+		const char *wantAnim = m_showRefpose ? "None" : *m_currAnim->Name;
 		float dummyFrame, dummyNumFrames, dummyRate;
 		const char *playingAnim;
 		MeshInst->GetAnimParams(0, playingAnim, dummyFrame, dummyNumFrames, dummyRate);
