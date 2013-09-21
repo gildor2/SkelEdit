@@ -114,7 +114,7 @@ var() bool					AnimRotationOnly;
 cpptext
 {
 	CAnimSet()
-	:	AnimRotationOnly(true)
+	:	AnimRotationOnly(false)
 	{}
 
 	/**

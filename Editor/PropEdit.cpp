@@ -544,7 +544,7 @@ CPropLink *WPropEdit::AppendProperty(CPropLink *Parent, const CProperty *Prop, i
 		if (Prop->Comment)
 		{
 			const char *cmt = Prop->Comment;
-			if (Prop->Comment[0] == '#')
+			if (cmt[0] == '#')
 			{
 				// extended property information
 				cmt = strchr(cmt, '\n');
@@ -1068,6 +1068,7 @@ WPropEdit::WPropEdit(wxWindow *parent, wxWindowID id, const wxPoint &pos,
 	wxColour bgColour = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNHIGHLIGHT);
 	SetCaptionForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_CAPTIONTEXT));
 #endif
+	SetEmptySpaceColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
 	SetLineColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW));
 	SetCaptionBackgroundColour(bgColour);
 	SetMarginColour(bgColour);
@@ -1082,6 +1083,7 @@ WPropEdit::WPropEdit(wxWindow *parent, wxWindowID id, const wxPoint &pos,
 	SetPropertyBackgroundColour(Prop, wxSystemSettings::GetColour(wxSYS_COLOUR_3DDKSHADOW));
 #endif
 	m_contPropColIndex = PROP_UNHIDE(Prop, m_bgColIndex);	// container property colour
+	SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
 	// remove dummy property
 	Clear();
 

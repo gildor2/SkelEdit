@@ -1,6 +1,6 @@
 #!/bin/bash
 
-project="Test.project"
+project="skeledit.project"
 makefile="makefile.mak"
 resfile="resource.bin"
 

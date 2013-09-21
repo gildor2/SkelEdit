@@ -241,7 +241,7 @@ public:
 	bool						AnimRotationOnly;
 
 	CAnimSet()
-	:	AnimRotationOnly(true)
+	:	AnimRotationOnly(false)
 	{}
 
 	/**
@@ -380,10 +380,6 @@ struct CMeshHitBox
 	 */
 	int							BoneIndex;
 	/**
-	 * Physical material to use with this box
-	 */
-	TString<MAX_FILE_PATH>		PhysMaterial;
-	/**
 	 * Bounding volume (oriented bounding box)
 	 * Box occupy a volume (-0.5,-0.5,-0.5)-(0.5,0.5,0.5) in local coordinate system
 	 */
@@ -391,7 +387,7 @@ struct CMeshHitBox
 
 	friend CArchive& operator<<(CArchive &Ar, CMeshHitBox &B)
 	{
-		return Ar << B.Name << AR_INDEX(B.BoneIndex) << B.PhysMaterial << B.Coords;
+		return Ar << B.Name << AR_INDEX(B.BoneIndex) << B.Coords;
 	}
 };
 

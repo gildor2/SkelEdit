@@ -15,7 +15,7 @@ struct VChunkHeader
 
 	friend CArchive& operator<<(CArchive &Ar, VChunkHeader &H)
 	{
-		SerializeChars(Ar, ARRAY_ARG(H.ChunkID));
+		Ar.Serialize(ARRAY_ARG(H.ChunkID));
 		return Ar << H.TypeFlag << H.DataSize << H.DataCount;
 	}
 };
@@ -79,7 +79,7 @@ struct VMaterial
 
 	friend CArchive& operator<<(CArchive &Ar, VMaterial &M)
 	{
-		SerializeChars(Ar, ARRAY_ARG(M.MaterialName));
+		Ar.Serialize(ARRAY_ARG(M.MaterialName));
 		return Ar << M.TextureIndex << M.PolyFlags << M.AuxMaterial <<
 					 M.AuxFlags << M.LodBias << M.LodStyle;
 	}
@@ -111,7 +111,7 @@ struct VBone
 
 	friend CArchive& operator<<(CArchive &Ar, VBone &B)
 	{
-		SerializeChars(Ar, ARRAY_ARG(B.Name));
+		Ar.Serialize(ARRAY_ARG(B.Name));
 		return Ar << B.Flags << B.NumChildren << B.ParentIndex << B.BonePos;
 	}
 };
@@ -145,7 +145,7 @@ struct FNamedBoneBinary
 
 	friend CArchive& operator<<(CArchive &Ar, FNamedBoneBinary &B)
 	{
-		SerializeChars(Ar, ARRAY_ARG(B.Name));
+		Ar.Serialize(ARRAY_ARG(B.Name));
 		return Ar << B.Flags << B.NumChildren << B.ParentIndex << B.BonePos;
 	}
 };
@@ -172,8 +172,8 @@ struct AnimInfoBinary
 
 	friend CArchive& operator<<(CArchive &Ar, AnimInfoBinary &A)
 	{
-		SerializeChars(Ar, ARRAY_ARG(A.Name));
-		SerializeChars(Ar, ARRAY_ARG(A.Group));
+		Ar.Serialize(ARRAY_ARG(A.Name));
+		Ar.Serialize(ARRAY_ARG(A.Group));
 		return Ar << A.TotalBones << A.RootInclude << A.KeyCompressionStyle <<
 					 A.KeyQuotum << A.KeyReduction << A.TrackTime << A.AnimRate <<
 					 A.StartBone << A.FirstRawFrame << A.NumRawFrames;

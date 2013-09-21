@@ -188,15 +188,29 @@ void CSkeletalMesh::PostLoad()
 	for (i = 0; i < Materials.Num(); i++)
 	{
 		CMeshMaterial &M = Materials[i];
-		if (M.RenMaterial && M.RenMaterial->Filename != M.Filename)
+		if (M.RenMaterial)
 		{
+			if (M.RenMaterial->Filename == M.Filename) continue;	// not changed
+		}
+		else
+		{
+			if (!M.Filename[0]) continue;							// no material required
+		}
+		// material is changed
+		if (M.RenMaterial)
+		{
+			// free old material
 			delete M.RenMaterial;
 			M.RenMaterial = NULL;
 		}
 		if (M.Filename[0])
+		{
+			// load new material
+			appPrintf("Loading texture %s for material %d\n", *M.Filename, i);
 			M.RenMaterial = new CRenderingMaterial(M.Filename);
+		}
 	}
-#endif
+#endif // EDITOR
 
 	unguard;
 }

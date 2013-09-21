@@ -415,7 +415,6 @@ public:
 	friend CArchive& operator<<(CArchive &Ar, CObject *&Obj);
 };
 
-void SerializeChars(CArchive &Ar, char *buf, int length);
 
 /*-----------------------------------------------------------------------------
 	TArray template

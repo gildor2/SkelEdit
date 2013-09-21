@@ -71,6 +71,14 @@ public:
 	 * Background colour of mesh viewer/editor
 	 */
 	CColor3f					MeshBackground;
+	/**
+	 * Gradient color
+	 */
+	CColor3f					MeshBackground2;
+	/**
+	 * Enable gradient for background
+	 */
+	bool						EnableGradient;
 };
 
 

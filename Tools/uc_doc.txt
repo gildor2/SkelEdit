@@ -6,7 +6,7 @@ Note: syntax used in our engine is partially differs from UE syntax.
 
 Class modifiers:
 ----------------
-extends OtherClass		derive thsi class from OtherClass
+extends OtherClass		derive this class from OtherClass
 abstract			do not allow instantiation, do not include in "new property instance" list ...
 noexport			do not create C++ header for this class (created separately)
 -hidecategories(list)		do not show listed property categories in editor (for parent class fields)

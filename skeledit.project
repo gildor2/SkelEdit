@@ -1,0 +1,37 @@
+# perl highlighting
+
+LIBC       = shared
+#LIBC       = static
+#OUT        = Release
+#MAPFILES   = 1
+#CONSOLE    = 1
+OPTIMIZE   = size
+
+PDB        = 1
+
+!if -d "libs/include"
+	# using locally placed libraries
+	wx_inc = libs/include
+	wx_lib = libs
+!else
+	# using global libraries
+	!error IMPLEMENT IT
+!endif
+
+
+INCLUDES   = $wx_inc Core Editor Anim
+LIBRARIES  = $wx_lib
+OBJDIR     = obj
+STDLIBS    = wxmsw28 wxmsw28_gl wxcode_msw28_propgrid opengl32 user32
+
+DEFINES    = WXUSINGDLL EDITOR
+
+ALLOW_MISSING_INCLUDES = 1
+
+sources(MAIN) = {
+	Editor/*.cpp
+	Anim/*.cpp
+	Core/*.cpp
+}
+
+target(executable, SkelEdit, MAIN, MAIN)

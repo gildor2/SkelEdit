@@ -1,0 +1,4 @@
+- reduce number of lib files - should use wx from outside
+- try to compile SkelEdit (and WX) with a recent VC++ - may be this will fix tooltip issue?
+- try to update wxWidgets - may fix tooltip issue?
+  - also new wx should contain wxPropertyGrid

@@ -179,8 +179,7 @@ public:
 		DrawTextRight("FPS: "S_GREEN"%5.1f", 1.0f / frameTime);
 
 		// prepare frame
-		glClearColor(VECTOR_ARG(GCfg.MeshBackground), 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		RenderBackground();
 		glDisable(GL_TEXTURE_2D);
 
 		GL::BuildMatrices();
@@ -234,6 +233,29 @@ public:
 	virtual bool ProcessMouse(bool leftDown, bool rightDown, int mouseX, int mouseY, int deltaX, int deltaY)
 	{
 		return TickGizmo(leftDown, mouseX, mouseY, deltaX, deltaY);
+	}
+
+	void RenderBackground()
+	{
+		if (!GCfg.EnableGradient)
+		{
+			glClearColor(VECTOR_ARG(GCfg.MeshBackground), 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
+		else
+		{
+			GL::Set2Dmode();
+			glDisable(GL_TEXTURE_2D);
+			glBegin(GL_QUADS);
+			glColor4f(VECTOR_ARG(GCfg.MeshBackground), 1);
+			glVertex2f(0, 0);
+			glVertex2f(GL::width, 0);
+			glColor4f(VECTOR_ARG(GCfg.MeshBackground2), 1);
+			glVertex2f(GL::width, GL::height);
+			glVertex2f(0, GL::height);
+			glEnd();
+			glClear(GL_DEPTH_BUFFER_BIT);
+		}
 	}
 };
 
@@ -1191,11 +1213,8 @@ public:
 			END_CLASS_TABLE
 
 			// setup some GCfg defaults
-#if !_DEBUG
 			GCfg.MeshBackground.Set(0.2, 0.3, 0.2);
-#else
-			GCfg.MeshBackground.Set(0.4, 0.2, 0.1);
-#endif
+
 			// load settings
 			bool hasSettigns = LoadSettings();
 			if (hasSettigns)

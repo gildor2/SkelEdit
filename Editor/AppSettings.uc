@@ -50,3 +50,11 @@ var(Paths) string[256] AnimDataDirectory;
  * Background colour of mesh viewer/editor
  */
 var(Colors) Color3f MeshBackground;
+/**
+ * Gradient color
+ */
+var(Colors) Color3f MeshBackground2;
+/**
+ * Enable gradient for background
+ */
+var(Colors) bool EnableGradient;

@@ -89,11 +89,6 @@ struct MeshHitBox
 	 */
 	var() editconst int		BoneIndex;
 	/**
-	 * #FILENAME PhysMaterial: *.phmp
-	 * Physical material to use with this box
-	 */
-	var() string[MAX_FILE_PATH] PhysMaterial;
-	/**
 	 * Bounding volume (oriented bounding box)
 	 * Box occupy a volume (-0.5,-0.5,-0.5)-(0.5,0.5,0.5) in local coordinate system
 	 */
@@ -103,7 +98,7 @@ struct MeshHitBox
 	{
 		friend CArchive& operator<<(CArchive &Ar, CMeshHitBox &B)
 		{
-			return Ar << B.Name << AR_INDEX(B.BoneIndex) << B.PhysMaterial << B.Coords;
+			return Ar << B.Name << AR_INDEX(B.BoneIndex) << B.Coords;
 		}
 	}
 };
@@ -192,8 +187,7 @@ var(Orientation)	Rotator	RotOrigin;
 /** Information for LOD levels */
 var() editnoadd		array<SkeletalMeshLod> Lods;
 /** Skeleton bones */
-//!! remove var()
-var()				array<MeshBone> Skeleton;
+var					array<MeshBone> Skeleton;
 /** Collision volumes */
 var(Extra Data) editnoadd array<MeshHitBox> BoundingBoxes;
 /** Attachment sockets */
