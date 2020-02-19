@@ -9,7 +9,7 @@ class WPropEdit : public wxPropertyGrid
 public:
 	WPropEdit(wxWindow *parent, wxWindowID id = wxID_ANY,
 			  const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize,
-			  long style = wxPG_DEFAULT_STYLE, const wxChar *name = wxPropertyGridNameStr);
+			  long style = wxPG_DEFAULT_STYLE, const wxString &name = wxPropertyGridNameStr);
 	~WPropEdit();
 
 	/**
@@ -68,9 +68,9 @@ protected:
 	 */
 	const CStruct	*m_typeInfo;
 	/**
-	 *	Index of container property colour
+	 *	Container property color
 	 */
-	byte			m_contPropColIndex;
+	wxColour		m_contPropColor;
 	/**
 	 *	Memory chain, used to allocate property links
 	 */

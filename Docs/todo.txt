@@ -1,0 +1,141 @@
+- Sockets:
+  - display as 1) special shape (in ADDITION to gizmo), 2) preview as mesh
+  - add "Show sockets" toolbar/menu
+
+? when changing resource root, should update property editors (or reconnect mesh?)
+  (should reload mesh textures)
+
+- mesh/anim import: when importing mesh/anim, specify:
+  - max/maya coordinate system (mesh only, for rotation)
+  ? mesh/anim scale: specify unit: meter (default), sm (unreal?), inch -- scale mesh
+    (skeleton and vertexes) and anim (position track), not just setup MeshScale
+
+- editor:
+  - animation playback:
+    - reverse playback: may be, tween (start anim) to LAST frame (not first) when
+      animation is not looped
+    - in-editor reverse playback: when pressing <Play> button, slider set to 0, but
+      should set to last frame when anim is not looped (detect by Rate < 0 ?)
+  ! redesign save/load code; create CArchiveMem, save mesh/animset/animtree to it,
+    compare with file on disk, and:
+    1) do not produce 'autosave' on crash when files are same
+    2) ask 'object modified, save?' on exit or load another object
+  - add "Textures Directory" to settings, should specify kind of resource in "#FILENAME"
+    tag in .uc
+
+! typeinfo:
+  - when importing typeinfo.bin, compare generated class sizes with size, which can
+    be computed with DECLARE_CLASS() macro (verify typeinfo.bin correctness/version)
+  - WriteAsText/ReadAsText
+    - can use for copy/paste in editor
+    - serialize array: can specify array size for optimized loading
+  - implement native/non-native props: CObject::Serialize() should serialize
+    non-native props automatically (useful for extension of the objects without
+    binary compatibility loss)
+    - "[struct]defaultproperties" section is desired for this; by default -
+      float(0), int(0), string("") etc
+  ? implement typeinfo + editor for 'array<string[size]> name' and
+    'string[size] name[dim]' -- requires separate string size and array size fields;
+    use instead of AnimBone
+
+- mesh optimization:
+  - remove bones without bound verts
+    - note: should provide a way to keep "special" bones for attachments
+    ? may be, remove bones "by hand"
+  - normalize bone names:
+    - remove "BipNN" prefix
+    - replace " " with "_"
+    - lowercase
+    * NOTE: do it for both mesh and AnimSet
+  - animation compression:
+    - UI to select animations to compress
+    - ability to completely remove position tracks (MeshInstance should use
+      position from refpose in that case, even if AnimRotationOnly==false)
+    *? info about compressed/uncompressed memory requirements for each
+      animation and in total
+    - set error thresholds for key comparison (pos, quat)
+      - size error as % of whole mesh size or as absolute value
+      - quat error - as set of angles ?
+    ? can use PropEdit for setting up compression to simplify dialog creation
+    ? few presets for settings
+    ! check similar dialog in UnrealEd4
+    - smaller types: use fixed16 instead of float
+    - try compressed quaternions
+    - try delta compression + quantization (fixed point type); can store scale to
+      improve precision
+    - UnrealEd4 has ability to visually compare compressed and uncompressed animations
+
+- data validation:
+  ? check automatically before mesh/anim saving
+  - check from UI
+  ? show log on errors ??
+  - mesh:
+    - check bone name duplicates
+    - check assignment of all materials
+  - animation:
+    - check sequence name duplication
+    - check for "AnimRotationOnly=true", but translation keys are not removed
+    - AnimRate should be >= 0
+
+- import mesh LOD:
+  - load as separate mesh
+  - compare skeleton hierarchy
+  - ref pose:
+    a) compare skeletons (should match)
+    b) convert verts to bone local space of meshB, then convert to global space using
+       meshA skeleton
+  - copy data to new LOD model
+
+- import/append animations:
+  - check skeleton hierarchy
+
+- uc parser:
+  - CPP: code to verify class sizes and field offsets
+  - field flag: "editparentvisible" (?): when set, field becomes visible in propgrid
+    container item instead of "..." text (useful for Vec3, Rotator etc)
+
+- UI:
+  - for mesh/anim: "... was modified, save?" before open/import/quit
+  - rename + delete AnimSeq
+  ? create xrc for AppSettings window, OK / Cancel (?) buttons
+    - will require method in dialog class to
+      1) copy GCfg to local place
+      2) ShowModal() + edit copy of config
+      3) if <OK> -> copy edited data back to GCfg
+      + process placement of prefs window here
+
+- PropEdit:
+  ? when nested property has only one field, can use it instead of container prop;
+    example:
+      struct SomeStruc { string[] Name };
+      ...
+      // somewhere used:
+      array<SomeStruc> Names;
+    current implementation will create:
+      + Names   | ...
+      + [0]     | ...
+          Name  | Name1
+      + [1]     | ...
+          Name  | Name2
+        etc
+    desired:
+      + Names   | ...
+        [0]     | Name1
+        [1]     | Name2
+  - editor for Rotator (degrees instead of 0..65535)
+  - editor for Vector (value as 'X=...,Y=...,Z=...')
+    ! check universal "editparentvisible" flag too
+  - short ints (currently only int32 is supported)
+  - spin edits for numbers (if possible - ala 3DSMax or UnrealEd, with mouse movement capture)
+  - editor for TArray<>: move (reorder) items
+
+- logging:
+  - log_file should be overwritten every new start
+  - notify_file should contain errors and important events
+
+- viewport:
+  - show floor
+    * may be required for IK testing
+
+- check: may be, Core/Commands.* not needed - remove them
+  - note: added to project for .ssi parsing

@@ -1,6 +1,6 @@
 #!/bin/bash
 archive="SkelEdit.rar"
-filelist="SkelEdit.exe readme.txt wx*.dll resource.bin typeinfo.bin"
+filelist="SkelEdit.exe SkelEdit.exe.manifest readme.txt wx*.dll resource.bin typeinfo.bin"
 
 for i in $filelist; do
 	if [ ! -f $i ]; then

@@ -11,11 +11,8 @@ GLCanvas::GLCanvas(wxWindow *parent)
 ,	m_mouseLeft(false)
 ,	m_mouseRight(false)
 ,	m_mouseMid(false)
-{
-	m_context = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
-	SetCurrent(*m_context);
-	GL::ResetView();
-}
+,	m_context(NULL)
+{}
 
 
 GLCanvas::~GLCanvas()
@@ -28,8 +25,21 @@ void GLCanvas::Render()
 {}
 
 
+void GLCanvas::CreateContext()
+{
+	if (!m_context)
+	{
+		m_context = new wxGLContext(this);	// destruction of current context is done in ~wxGLCanvas
+		SetCurrent(*m_context);
+		GL::OnResize(GetSize().GetWidth(), GetSize().GetHeight());
+		GL::ResetView();
+	}
+}
+
+
 void GLCanvas::OnPaint(wxPaintEvent &event)
 {
+	CreateContext();
 	// The following line is required; strange bugs without it (messageboxes not works,
 	// app cannot exit etc)
 	// This is a dummy, to avoid an endless succession of paint messages.
@@ -40,8 +50,9 @@ void GLCanvas::OnPaint(wxPaintEvent &event)
 
 void GLCanvas::OnSize(wxSizeEvent &event)
 {
-	wxGLCanvas::OnSize(event);
-	GL::OnResize(event.GetSize().GetWidth(), event.GetSize().GetHeight());
+	if (!IsShownOnScreen()) return;			// ignore OnSize before window creation to avoid wx asserts
+	CreateContext();
+	GL::OnResize(GetSize().GetWidth(), GetSize().GetHeight());
 }
 
 void GLCanvas::OnEraseBackground(wxEraseEvent &event)

@@ -1,0 +1,7 @@
+wx*.dll
+xrc/gui.pjd.bak
+typeinfo.bin
+resource.bin
+notify.log
+config.cfg
+makefile.mak

@@ -1,0 +1,6 @@
+- background у wxToolbar не перерисовываетс€
+  причина: скорее всего у exe отсутствует manifest
+  http://groups.google.com/group/wx-dev/browse_thread/thread/aaf57e2dae460946
+  http://trac.wxwidgets.org/ticket/12238
+   ак добавить манифест (он по€вилс€ в VC 8/2005): добавить в проект rc-файл, содержащий
+  #include "wx/msw/wx.rc"

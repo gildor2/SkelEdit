@@ -11,6 +11,7 @@
 #include "GlFont.h"
 
 #define CHARS_PER_LINE	(TEX_WIDTH/CHAR_WIDTH)
+#define FONT_SPACING	1
 
 //-----------------------------------------------------------------------------
 //	GL support functions
@@ -18,8 +19,6 @@
 
 #define DEFAULT_DIST	256
 #define MAX_DIST		2048
-
-#define FONT_TEX_NUM	1
 
 
 namespace GL
@@ -32,8 +31,8 @@ namespace GL
 	float tFovX, tFovY;			///< tan(fov_x|y)
 	bool  invertXAxis = false;	///< when 'false' - use right-hand coordinates; when 'true' - left-hand
 	// window size
-	int   width  = 800;
-	int   height = 600;
+	int   width  = 800;		//?? rename to winWidth
+	int   height = 600;		//?? rename to winHeight
 	// matrices
 	float projectionMatrix[4][4];
 	float modelMatrix[4][4];
@@ -109,89 +108,112 @@ namespace GL
 	// Text output
 	//-------------------------------------------------------------------------
 
-	void LoadFont()
+static GLuint	FontTexNum = 0;
+
+static void LoadFont()
+{
+	// decompress font texture
+	byte *pic = (byte*)appMalloc(TEX_WIDTH * TEX_HEIGHT * 4);
+	int i;
+	const byte *p;
+	byte *dst;
+
+	// unpack 4 bit-per-pixel data with RLE encoding of null bytes
+	for (p = TEX_DATA, dst = pic; p < TEX_DATA + ARRAY_COUNT(TEX_DATA); /*empty*/)
 	{
-		// decompress font texture
-		byte *pic = (byte*)malloc(TEX_WIDTH * TEX_HEIGHT * 4);
-		int i;
-		byte *p, *dst;
-		for (i = 0, p = TEX_DATA, dst = pic; i < TEX_WIDTH * TEX_HEIGHT / 8; i++, p++)
+		byte s = *p++;
+		if (s & 0x80)
 		{
-			byte s = *p;
-			for (int bit = 0; bit < 8; bit++, dst += 4)
+			// unpack data
+			// using *17 here: 0*17=>0, 15*17=>255
+			for (int count = (s & 0x7F) + 1; count > 0; count--)
 			{
-				dst[0] = 255;
-				dst[1] = 255;
-				dst[2] = 255;
-				dst[3] = (s & (1 << bit)) ? 255 : 0;
+				s = *p++;
+				dst[0] = dst[1] = dst[2] = 255; dst += 3;
+				*dst++ = (s >> 4) * 17;
+				dst[0] = dst[1] = dst[2] = 255; dst += 3;
+				*dst++ = (s & 0xF) * 17;
 			}
 		}
-		// upload it
-		glBindTexture(GL_TEXTURE_2D, FONT_TEX_NUM);
-		glTexImage2D(GL_TEXTURE_2D, 0, 4, TEX_WIDTH, TEX_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		delete pic;
-	}
-
-	void DrawChar(char c, int color, int textX, int textY)
-	{
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, FONT_TEX_NUM);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_ALPHA_TEST);
-		glAlphaFunc(GL_GREATER, 0.5);
-
-		static const float colorTable[][3] = {
-			{0, 0, 0},
-			{1, 0, 0},
-			{0, 1, 0},
-			{1, 1, 0},
-			{0, 0, 1},
-			{1, 0, 1},
-			{0, 1, 1},
-			{1, 1, 1}
-		};
-
-		glBegin(GL_QUADS);
-
-		c -= FONT_FIRST_CHAR;
-
-		int x1 = textX;
-		int y1 = textY;
-		int x2 = textX + CHAR_WIDTH;
-		int y2 = textY + CHAR_HEIGHT;
-		int line = c / CHARS_PER_LINE;
-		int col  = c - line * CHARS_PER_LINE;
-		float s0 = (col      * CHAR_WIDTH)  / (float)TEX_WIDTH;
-		float s1 = ((col+1)  * CHAR_WIDTH)  / (float)TEX_WIDTH;
-		float t0 = (line     * CHAR_HEIGHT) / (float)TEX_HEIGHT;
-		float t1 = ((line+1) * CHAR_HEIGHT) / (float)TEX_HEIGHT;
-
-		for (int s = 1; s >= 0; s--)
+		else
 		{
-			if (s)
-				glColor3f(0, 0, 0);
-			else
-				glColor3fv(colorTable[color]);
-			glTexCoord2f(s0, t0);
-			glVertex3f(x1+s, y1+s, 0);
-			glTexCoord2f(s1, t0);
-			glVertex3f(x2+s, y1+s, 0);
-			glTexCoord2f(s1, t1);
-			glVertex3f(x2+s, y2+s, 0);
-			glTexCoord2f(s0, t1);
-			glVertex3f(x1+s, y2+s, 0);
+			// zero bytes
+			for (int count = (s + 2) * 2; count > 0; count--)
+			{
+				dst[0] = dst[1] = dst[2] = 255; dst += 3;
+				*dst++ = 0;
+			}
 		}
-
-		glEnd();
 	}
+//	printf("p[%d], dst[%d] -> %g\n", p - TEX_DATA, dst - pic, float(dst - pic) / 4 / TEX_WIDTH);
+
+	// upload it
+	glGenTextures(1, &FontTexNum);
+	glBindTexture(GL_TEXTURE_2D, FontTexNum);
+	// the best whould be to use 8-bit format with A=(var) and RGB=FFFFFF, but GL_ALPHA has RGB=0;
+	// format with RGB=0 is not suitable for font shadow rendering because we must use GL_SRC_COLOR
+	// blending; that's why we're using GL_RGBA here
+	glTexImage2D(GL_TEXTURE_2D, 0, 4, TEX_WIDTH, TEX_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pic);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	appFree(pic);
+}
+
+
+static void DrawChar(char c, unsigned color, int textX, int textY)
+{
+	if (textX <= -CHAR_WIDTH || textY <= -CHAR_HEIGHT ||
+		textX > width || textY > height)
+		return;				// outside of screen
+
+	glBegin(GL_QUADS);
+
+	c -= FONT_FIRST_CHAR;
+
+	// screen coordinates
+	int x1 = textX;
+	int y1 = textY;
+	int x2 = textX + CHAR_WIDTH - FONT_SPACING;
+	int y2 = textY + CHAR_HEIGHT - FONT_SPACING;
+
+	// texture coordinates
+	int line = c / CHARS_PER_LINE;
+	int col  = c - line * CHARS_PER_LINE;
+
+	float s0 = col * CHAR_WIDTH;
+	float s1 = s0 + CHAR_WIDTH - FONT_SPACING;
+	float t0 = line * CHAR_HEIGHT;
+	float t1 = t0 + CHAR_HEIGHT - FONT_SPACING;
+
+	s0 /= TEX_WIDTH;
+	s1 /= TEX_WIDTH;
+	t0 /= TEX_HEIGHT;
+	t1 /= TEX_HEIGHT;
+
+	unsigned color2 = color & 0xFF000000;	// RGB=0, keep alpha
+	for (int s = 1; s >= 0; s--)
+	{
+		// s=1 -> shadow, s=0 -> char
+		glColor4ubv((GLubyte*)&color2);
+		glTexCoord2f(s0, t0);
+		glVertex2f(x1+s, y1+s);
+		glTexCoord2f(s1, t0);
+		glVertex2f(x2+s, y1+s);
+		glTexCoord2f(s1, t1);
+		glVertex2f(x2+s, y2+s);
+		glTexCoord2f(s0, t1);
+		glVertex2f(x1+s, y2+s);
+		color2 = color;
+	}
+
+	glEnd();
+}
 
 	//-------------------------------------------------------------------------
 	// called when window resized
 	void OnResize(int w, int h)
 	{
+		//?? check for requirement to reload textures like done in umodel
 		width  = w;
 		height = h;
 		LoadFont();
@@ -420,12 +442,32 @@ static void GetTextExtents(const char *s, int &width, int &height)
 }
 
 
+#define I 255
+#define o 51
+static const unsigned colorTable[8] =
+{
+	RGB255(0, 0, 0),
+	RGB255(I, o, o),
+	RGB255(o, I, o),
+	RGB255(I, I, o),
+	RGB255(o, o, I),
+	RGB255(I, o, I),
+	RGB255(o, I, I),
+	RGB255(I, I, I)
+};
+
+#define WHITE_COLOR		RGB(255,255,255)
+
+#undef I
+#undef o
+
+
 static void DrawText(const CRText *rec)
 {
 	int y = rec->y;
 	const char *text = rec->text;
 
-	int color = 7;
+	unsigned color = WHITE_COLOR;
 	while (true)
 	{
 		const char *s = strchr(text, '\n');
@@ -440,7 +482,7 @@ static void DrawText(const CRText *rec)
 				char c2 = text[i+1];
 				if (c2 >= '0' && c2 <= '7')
 				{
-					color = c2 - '0';
+					color = colorTable[c2 - '0'];
 					i++;
 					continue;
 				}
@@ -458,6 +500,13 @@ static void DrawText(const CRText *rec)
 
 void FlushTexts()
 {
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, GL::FontTexNum);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//	glEnable(GL_ALPHA_TEST);
+//	glAlphaFunc(GL_GREATER, 0.5);
+
 	Text.Enumerate(DrawText);
 	nextLeft_y = nextRight_y = TOP_TEXT_POS;
 	ClearTexts();

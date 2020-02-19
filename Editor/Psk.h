@@ -44,25 +44,53 @@ struct VVertex
 	friend CArchive& operator<<(CArchive &Ar, VVertex &V)
 	{
 		Ar << V.PointIndex << V.U << V.V << V.MatIndex << V.Reserved << V.Pad;
-		if (Ar.IsLoading)
-			V.PointIndex &= 0xFFFF;			// clamp padding bytes
 		return Ar;
 	}
 };
 
 
-struct VTriangle
+struct VTriangle16
 {
 	word			WedgeIndex[3];			// Point to three vertices in the vertex list.
 	byte			MatIndex;				// Materials can be anything.
 	byte			AuxMatIndex;			// Second material (unused).
 	unsigned		SmoothingGroups;		// 32-bit flag for smoothing groups.
 
-	friend CArchive& operator<<(CArchive &Ar, VTriangle &T)
+	friend CArchive& operator<<(CArchive &Ar, VTriangle16 &T)
 	{
 		Ar << T.WedgeIndex[0] << T.WedgeIndex[1] << T.WedgeIndex[2];
 		Ar << T.MatIndex << T.AuxMatIndex << T.SmoothingGroups;
 		return Ar;
+	}
+};
+
+
+// the same as VTriangle16 but with 32-bit vertex indices
+//!! note: this structure has different on-disk and in-memory layout and size (due to alignment)
+struct VTriangle32
+{
+	int				WedgeIndex[3];			// Point to three vertices in the vertex list.
+	byte			MatIndex;				// Materials can be anything.
+	byte			AuxMatIndex;			// Second material (unused).
+	unsigned		SmoothingGroups;		// 32-bit flag for smoothing groups.
+
+	// original psk VTriangle
+	friend void SerializeTriangle16(CArchive &Ar, VTriangle32 &T)
+	{
+		if (Ar.IsLoading)
+		{
+			// high-order words should be zeroed
+			T.WedgeIndex[0] = T.WedgeIndex[1] = T.WedgeIndex[2] = 0;
+		}
+		Ar << ((short&)T.WedgeIndex[0]) << ((short&)T.WedgeIndex[1]) << ((short&)T.WedgeIndex[2]);
+		Ar << T.MatIndex << T.AuxMatIndex << T.SmoothingGroups;
+	}
+
+	// extended VTriangle with 32-bit WedgeIndex
+	friend void SerializeTriangle32(CArchive &Ar, VTriangle32 &T)
+	{
+		Ar << T.WedgeIndex[0] << T.WedgeIndex[1] << T.WedgeIndex[2];
+		Ar << T.MatIndex << T.AuxMatIndex << T.SmoothingGroups;
 	}
 };
 

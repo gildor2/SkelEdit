@@ -9,8 +9,6 @@
 
 #define MAX_STRUC_PROPS		1024		// in-stack array limit
 
-//#define COLORIZE			1
-
 #define CHECK_PROP_LINKS	1
 //#define DEBUG_ARRAYS		1
 
@@ -42,6 +40,10 @@ enum
 static wxBitmap *bmpPropAdd    = NULL;
 static wxBitmap *bmpPropRemove = NULL;
 
+// editors
+static wxPGEditor *noEditor    = NULL;
+static wxPGEditor *arrayEditor = NULL;
+
 // colours
 static wxColour propColourReadonly;
 
@@ -60,16 +62,6 @@ static wxColour AddColour(wxColour base, int r, int g, int b)
 }
 
 
-/**
- *	Hack to get access from WPropEdit to protected wxPGProperty fields
- */
-class wxPGPropAccessHack : public wxPGProperty
-{
-	friend WPropEdit;
-};
-#define PROP_UNHIDE(Prop,Field)	( ((wxPGPropAccessHack*)Prop)->Field )
-
-
 static CPropLink *GetPropLink(wxPGProperty *prop)
 {
 	assert(prop);
@@ -86,23 +78,16 @@ static CPropLink *GetPropLink(wxPGProperty *prop)
 
 class WNoEditor : public wxPGTextCtrlEditor
 {
-	WX_PG_DECLARE_EDITOR_CLASS(WNoEditor)
+	DECLARE_DYNAMIC_CLASS(WNoEditor)
 public:
-	WNoEditor()
-	{}
-	virtual ~WNoEditor()
-	{}
-
-	wxPG_DECLARE_CREATECONTROLS
+	virtual wxPGWindowList CreateControls(wxPropertyGrid* propgrid, wxPGProperty* property, const wxPoint& pos, const wxSize& size) const
+	{
+		// prevent from creation of any editor for this property
+		return (wxWindow*)NULL;
+	}
 };
 
-WX_PG_IMPLEMENT_EDITOR_CLASS(NoEditor, WNoEditor, wxPGTextCtrlEditor)
-
-wxPGWindowList WNoEditor::CreateControls(wxPropertyGrid *grid, wxPGProperty *prop,
-	const wxPoint &pos, const wxSize &sz) const
-{
-	return (wxWindow*)NULL;
-}
+IMPLEMENT_DYNAMIC_CLASS(WNoEditor, wxPGTextCtrlEditor)
 
 
 /*-----------------------------------------------------------------------------
@@ -111,18 +96,12 @@ wxPGWindowList WNoEditor::CreateControls(wxPropertyGrid *grid, wxPGProperty *pro
 
 class WDynArrayEditor : public wxPGTextCtrlEditor
 {
-	WX_PG_DECLARE_EDITOR_CLASS(WDynArrayEditor)
-
+	DECLARE_DYNAMIC_CLASS(WDynArrayEditor)
 public:
-	WDynArrayEditor()
-	{}
-	virtual ~WDynArrayEditor()
-	{}
-
 	virtual wxPGWindowList CreateControls(wxPropertyGrid *grid, wxPGProperty *prop, const wxPoint &pos, const wxSize &sz) const
 	{
 		guard(WDynArrayEditor::CreateControls);
-		CPropLink *link = GetPropLink(prop);		//?? not needed?
+		CPropLink *link = GetPropLink(prop);
 		// create buttons
 		wxPGMultiButton *buttons = new wxPGMultiButton(grid, sz);
 		if (link->IsArray())
@@ -135,7 +114,7 @@ public:
 			buttons->Add(*bmpPropRemove);
 			buttons->GetButton(0)->SetToolTip("Remove array entry");
 		}
-		buttons->FinalizePosition(pos);
+		buttons->Finalize(grid, pos);
 		// attach to property editor
 		wxPGWindowList wndList;
 		wndList.SetSecondary(buttons);
@@ -175,7 +154,7 @@ public:
 	}
 };
 
-WX_PG_IMPLEMENT_EDITOR_CLASS(ArrayEntry, WDynArrayEditor, wxPGTextCtrlEditor)
+IMPLEMENT_DYNAMIC_CLASS(WDynArrayEditor, wxPGTextCtrlEditor)
 
 
 /*-----------------------------------------------------------------------------
@@ -279,7 +258,9 @@ public:
 			for (int i = 0; i < Type->Names.Num(); i++)
 				m_choices.Add(Type->Names[i]);
 			// update value
-			SetIndex(*(byte*)mInfo->Data);
+			byte v = *(byte*)mInfo->Data;
+			SetIndex(v);
+			m_value = wxVariant(v);
 			return false;
 		}
 		return Super::DoSetAttribute(name, value);
@@ -320,7 +301,9 @@ public:
 				m_choices.Add(str);
 			}
 			// update value
-			SetIndex(*(int*)mInfo->Data);
+			int v = *(int*)mInfo->Data;
+			SetIndex(v);
+			m_value = wxVariant(v);
 			return false;
 		}
 		return Super::DoSetAttribute(name, value);
@@ -348,6 +331,11 @@ class WFileProperty : public wxFileProperty
 {
 	COMMON_FIELDS(WFileProperty, wxFileProperty, (Name, wxPG_LABEL))
 	STRING_HANDLERS
+//!! disabled:
+//!! 1) check - may be the bug were fixed in PropGrid
+//!! 2) GetValueAsString() were replaced with ValueToString(); reference:
+//!!    wxFileProperty::ValueToString()
+#if 0
 	/*
 	 * wxFileProperty (or, more likely, wxFileName, used by wxFileProperty)
 	 * has a bug: when relative filename edited by hands (not using file
@@ -378,6 +366,7 @@ class WFileProperty : public wxFileProperty
 
 		return m_filename.GetFullName();
 	}
+#endif
 };
 
 
@@ -398,7 +387,7 @@ public:
 		{
 			const CColor3f &src = * ((CColor3f*) mInfo->Data);
 			wxColour tmp(src[0] * 255, src[1] * 255, src[2] * 255);
-			Init(tmp);
+			m_value << tmp;
 			return false;
 		}
 		return Super::DoSetAttribute(name, value);
@@ -406,20 +395,21 @@ public:
 };
 
 
-class WContainerProperty : public wxCustomProperty
+class WContainerProperty : public wxStringProperty
 {
-	COMMON_NOCONSTRUC(WContainerProperty, wxCustomProperty)
+	COMMON_NOCONSTRUC(WContainerProperty, wxStringProperty)
 public:
 	WContainerProperty(const char *name, CPropLink *link)
-	:	wxCustomProperty(name)
+	:	wxStringProperty(name)
 	,	mInfo(link)
 	{
-		SetValue("...");					//?? hook GetValueAsString(), and do not use SetValue()
-		SetFlag(wxPG_PROP_MODIFIED | wxPG_PROP_COLLAPSED);
+		SetValue("...");
+		SetFlag(wxPG_PROP_MODIFIED);
+		SetExpanded(false);
 	}
 	virtual const wxPGEditor *DoGetEditorClass() const
 	{
-		return wxPG_EDITOR(NoEditor);
+		return noEditor;
 	}
 };
 
@@ -532,14 +522,8 @@ CPropLink *WPropEdit::AppendProperty(CPropLink *Parent, const CProperty *Prop, i
 		{
 			// append property to parent
 			// note: there is no correct support for sub-categories
-			AppendIn(Parent->wProp->GetId(), P);
+			AppendIn(Parent->wProp, P);
 		}
-		// Set property background colour.
-		// Note: doing this after appending to grid, because Append() will set
-		// property background colour to parent property colour.
-		// Index '0' is taken from wxPropertyGrid::SetCellBackgroundColour() - this
-		// function updates m_arrBgBrushes.Item(0)
-		PROP_UNHIDE(P, m_bgColIndex) = Type == PT_CONTAINER ? m_contPropColIndex : 0;
 		// setup property comment
 		if (Prop->Comment)
 		{
@@ -574,14 +558,14 @@ CPropLink *WPropEdit::AppendProperty(CPropLink *Parent, const CProperty *Prop, i
 
 void WPropEdit::MarkArray(wxPGProperty *Prop)
 {
-	Prop->SetEditor(wxPG_EDITOR(ArrayEntry));
+	Prop->SetEditor(arrayEditor);
 }
 
 
 void WPropEdit::MarkReadonly(wxPGProperty *Prop)
 {
-	Prop->SetEditor(wxPG_EDITOR(NoEditor));
-	SetPropertyBackgroundColour(Prop->GetId(), propColourReadonly);
+	Prop->SetEditor(noEditor);
+	Prop->SetBackgroundColour(propColourReadonly);
 	for (int i = 0; i < Prop->GetChildCount(); i++)
 		MarkReadonly(Prop->Item(i));		// recurse to children
 }
@@ -626,6 +610,8 @@ CPropLink *WPropEdit::PopulateProp(CPropLink *Parent, const CProperty *Prop, voi
 		// note: AppendProperty() should be used BEFORE PopulateStruct() when inserting child props
 		// (otherwise app will crash)
 		PopulateStruct(link, (CStruct*)Prop->TypeInfo, Data);
+		// change the color after populating children properties
+		link->wProp->SetBackgroundColour(m_contPropColor, 0);
 	}
 	else if (Type->IsEnum)
 	{
@@ -766,7 +752,10 @@ void WPropEdit::PopulateArrayProp(CPropLink *Parent, const CProperty *Prop, void
 		CPropLink *link = PopulateProp(ArrayProp, Prop, Data, Index);
 		if (canRemoveItems)
 			MarkArray(link->wProp);
+		// Set property background colour.
+		link->wProp->SetBackgroundColour(m_contPropColor, 0);
 	}
+	ArrayProp->wProp->SetBackgroundColour(m_contPropColor, 0);
 	if (canAddItems)
 		MarkArray(ArrayProp->wProp);
 	if (Prop->IsReadonly)
@@ -1040,52 +1029,40 @@ static void InitStatics()
 	init = true;
 
 	// register property editors
-	wxPGRegisterEditorClass(NoEditor);
-	wxPGRegisterEditorClass(ArrayEntry);
+	noEditor    = wxPropertyGrid::RegisterEditorClass(new WNoEditor());
+	arrayEditor = wxPropertyGrid::RegisterEditorClass(new WDynArrayEditor());
 	// load bitmaps
 	bmpPropAdd    = LoadResBitmap(RES_NAME("prop_add.png"));
 	bmpPropRemove = LoadResBitmap(RES_NAME("prop_remove.png"));
-	// init colours
-	wxColour bg = wxSystemSettings::GetColour(wxSYS_COLOUR_3DDKSHADOW);
-	propColourReadonly = AddColour(bg, 64, -48, -48);
 }
 
 
 WPropEdit::WPropEdit(wxWindow *parent, wxWindowID id, const wxPoint &pos,
-	const wxSize &size, long style, const wxChar *name)
+	const wxSize &size, long style, const wxString &name)
 :	wxPropertyGrid(parent, id, pos, size, style, name)
 ,	m_isRefreshing(false)
 ,	m_enumCallback(NULL)
 {
 	InitStatics();
 	// init some colours
-#if COLORIZE
-	SetCellBackgroundColour(wxColour(192, 192, 255));
-	wxColour bgColour = wxColour(64, 96, 192);
-	SetCaptionForegroundColour(wxColour(255, 255, 255));
-#else
-	SetCellBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
-	wxColour bgColour = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNHIGHLIGHT);
-	SetCaptionForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_CAPTIONTEXT));
-#endif
-	SetEmptySpaceColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
+	wxColour bg  = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+	wxColour bg2 = AddColour(bg, -48, -48, -48);
+
+	propColourReadonly = AddColour(bg, 64, -32, -32);
+	m_contPropColor = bg;
+	SetCellBackgroundColour(AddColour(bg, 48, 48, 48));
 	SetLineColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNSHADOW));
-	SetCaptionBackgroundColour(bgColour);
-	SetMarginColour(bgColour);
-	SetSelectionBackground(wxColour(32, 255, 64));
-	SetSelectionForeground(wxColour(0, 0, 0));
-	// create dummy property, setup its colour and get its internal index
-	wxPGProperty *Prop = new wxIntProperty("test", wxPG_LABEL, 0);
-	Append(Prop);
-#if COLORIZE
-	SetPropertyBackgroundColour(Prop, wxColour(48, 64, 128));
-#else
-	SetPropertyBackgroundColour(Prop, wxSystemSettings::GetColour(wxSYS_COLOUR_3DDKSHADOW));
-#endif
-	m_contPropColIndex = PROP_UNHIDE(Prop, m_bgColIndex);	// container property colour
+
+	SetCaptionBackgroundColour(bg2);
+	SetCaptionTextColour(AddColour(bg, 32, 32, 32));
+
+	SetMarginColour(bg2);
+	SetEmptySpaceColour(bg);
+
+	SetSelectionBackgroundColour(wxColour(32, 255, 64));
+	SetSelectionTextColour(wxColour(0, 0, 0));
+
 	SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
-	// remove dummy property
-	Clear();
 
 	// propare prop links
 	m_chain = new CMemoryChain;		//?? can make global chain for all PropGrids
@@ -1191,7 +1168,7 @@ void WPropEdit::RefreshProperty(CPropLink *link, const CType *type)
 		assert(link->Prop);
 		const CProperty *Prop = link->Prop;
 		if (!Prop->IsArray())
-			PopulateProp(link->Parent, Prop, link->Data, link->ArrayIndex);
+			PopulateProp     (link->Parent, Prop, link->Data, link->ArrayIndex);
 		else
 			PopulateArrayProp(link->Parent, Prop, link->Data);
 	}

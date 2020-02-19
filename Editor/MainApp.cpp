@@ -64,9 +64,7 @@ protected:
 
 	wxWindow* FindCtrl(const char *Name)	//!! copy from WMainFrame
 	{
-		int id = wxXmlResource::GetXRCID(Name, -12345);
-		if (id == -12345)
-			appError("Resource error:\nIdent \"%s\" is not registered", Name);
+		int id = wxXmlResource::GetXRCID(Name);
 		wxWindow *res = FindWindow(id);
 		if (!res)
 			appError("Resource error:\nUnable to find control for \"%s\" (id=%d)", Name, id);
@@ -296,9 +294,7 @@ private:
 
 	wxWindow* FindCtrl(const char *Name)
 	{
-		int id = wxXmlResource::GetXRCID(Name, -12345);
-		if (id == -12345)
-			appError("Resource error:\nIdent \"%s\" is not registered", Name);
+		int id = wxXmlResource::GetXRCID(Name);
 		wxWindow *res = FindWindow(id);
 		if (!res)
 			appError("Resource error:\nUnable to find control for \"%s\" (id=%d)", Name, id);
@@ -393,9 +389,6 @@ public:
 	~WMainFrame()
 	{
 		CollectSettings();
-		delete m_meshPropEdit;
-		delete m_animSetPropEdit;
-		delete m_animPropEdit;
 	}
 
 	/**
@@ -419,6 +412,30 @@ public:
 		m_meshPropEdit->SetSplitterPosition(GCfg.MeshPropSplitter);
 		m_animSetPropEdit->SetSplitterPosition(GCfg.AnimSetPropSplitter);
 		m_animPropEdit->SetSplitterPosition(GCfg.AnimSeqPropSplitter);
+	}
+
+	/**
+	 *	File operations
+	 */
+
+	void ImportMesh(const char *Filename)
+	{
+		guard(WMainFrame::ImportMesh);
+
+		wxFileName fn = Filename;	// using wxFileName here for GetName() function
+		m_meshFilename = "Imported_" + fn.GetName() + "."MESH_EXTENSION;
+		if (EditorMesh) delete EditorMesh;
+
+		appSetNotifyHeader("Importing mesh from %s", Filename);
+		EditorMesh = new CSkeletalMesh;
+		CFile Ar(Filename);			// note: will throw appError when failed
+		ImportPsk(Ar, *EditorMesh);
+		EditorMesh->PostLoad();		// generate extra data
+
+		appSetNotifyHeader("");
+		UseMesh(EditorMesh);
+
+		unguard;
 	}
 
 protected:
@@ -770,6 +787,7 @@ protected:
 	/**
 	 *	Mesh file operations
 	 */
+
 	void OnImportMesh(wxCommandEvent&)
 	{
 		guard(WMainFrame::OnImportMesh);
@@ -777,7 +795,7 @@ protected:
 		StopAnimation();
 
 		wxFileDialog dlg(this, "Import mesh from file ...", *GCfg.ImportDirectory, "",
-			"ActorX mesh files (*.psk)|*.psk",
+			"ActorX mesh files (*.psk,*.pskx)|*.psk;*.pskx",
 			wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 		if (dlg.ShowModal() == wxID_OK)
 		{
@@ -785,10 +803,11 @@ protected:
 			m_meshFilename = "Imported_" + fn.GetName() + "."MESH_EXTENSION;
 			if (EditorMesh) delete EditorMesh;
 
-			const char *filename = dlg.GetPath().c_str();
-			appSetNotifyHeader("Importing mesh from %s", filename);
+			wxString filename = dlg.GetPath();
+			const char *filename2 = filename.c_str();	// wxString.c_str() has known bugs with printf-like functions, so use intermediate variable
+			appSetNotifyHeader("Importing mesh from %s", filename2);
 			EditorMesh = new CSkeletalMesh;
-			CFile Ar(filename);			// note: will throw appError when failed
+			CFile Ar(filename2);		// note: will throw appError when failed
 			ImportPsk(Ar, *EditorMesh);
 			EditorMesh->PostLoad();		// generate extra data
 
@@ -815,12 +834,14 @@ protected:
 			if (EditorMesh) delete EditorMesh;
 
 			EditorMesh = CSkeletalMesh::LoadObject(m_meshFilename.c_str());
-			if (!EditorMesh)
+			if (EditorMesh)
+			{
+				UseMesh(EditorMesh);
+			}
+			else
 			{
 				wxMessageBox(m_meshFilename, "Unable to load mesh", wxOK | wxICON_ERROR);
-				return;
 			}
-			UseMesh(EditorMesh);
 		}
 
 		unguard;
@@ -860,10 +881,11 @@ protected:
 			m_animFilename = "Imported_" + fn.GetName() + "."ANIM_EXTENSION;
 			if (EditorAnim) delete EditorAnim;
 
-			const char *filename = dlg.GetPath().c_str();
-			appSetNotifyHeader("Importing animations from %s", filename);
+			wxString filename = dlg.GetPath();
+			const char *filename2 = filename.c_str();
+			appSetNotifyHeader("Importing animations from %s", filename2);
 			EditorAnim = new CAnimSet;
-			CFile Ar(filename);		// note: will throw appError when failed
+			CFile Ar(filename.c_str());	// note: will throw appError when failed
 			ImportPsa(Ar, *EditorAnim);
 
 			appSetNotifyHeader("");
@@ -1213,7 +1235,8 @@ public:
 			END_CLASS_TABLE
 
 			// setup some GCfg defaults
-			GCfg.MeshBackground.Set(0.2, 0.3, 0.2);
+			GCfg.MeshBackground.Set(0, 0.3f, 0.5f);
+			GCfg.EnableGradient = true;
 
 			// load settings
 			bool hasSettigns = LoadSettings();
@@ -1239,6 +1262,15 @@ public:
 			{
 				wxMessageBox("Please specify a resource root directory", "Setup", wxOK | wxICON_EXCLAMATION);
 				EditSettings(frame);
+			}
+
+			if (argc > 1)
+			{
+				wxString FileToOpen(argv[1]);
+				const char *s = FileToOpen.c_str();
+				const char *ext = strrchr(s, '.');
+				if (ext && (!stricmp(ext, ".psk") || !stricmp(ext, ".pskx")))
+					frame->ImportMesh(s);
 			}
 
 			// return true to continue
@@ -1284,6 +1316,7 @@ public:
 		catch (...)
 		{
 			// display error message
+			GLogWindow->Show(true);
 			DisplayError();
 			// emergency save edited data
 			bool savedMesh = false, savedAnim = false;

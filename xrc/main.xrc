@@ -4,6 +4,7 @@
         <style>wxDEFAULT_FRAME_STYLE</style>
         <size>600,450</size>
         <title>Skeletal Mesh Editor</title>
+        <centered>1</centered>
         <object class="wxMenuBar" name="ID_MENUBAR1">
             <object class="wxMenu">
                 <label>&amp;File</label>
@@ -332,7 +333,7 @@
                                                 <border>5</border>
                                                 <object class="wxFlexGridSizer">
                                                     <cols>2</cols>
-                                                    <rows>2</rows>
+                                                    <rows>3</rows>
                                                     <vgap>0</vgap>
                                                     <hgap>0</hgap>
                                                     <growablecols>0</growablecols>
@@ -520,7 +521,6 @@
     <object class="wxDialog" name="ID_BONEFRAME">
         <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX|wxTAB_TRAVERSAL</style>
         <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
-        <size>500,-1</size>
         <title>Create new Something</title>
         <centered>1</centered>
         <object class="wxBoxSizer">

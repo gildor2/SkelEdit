@@ -15,7 +15,7 @@ DEFINE_EVENT_TYPE(wxEVT_LOG_CLOSED)
 
 
 WLogWindow::WLogWindow(wxFrame *parent)
-:	wxLogWindow(parent, "System Log", false)
+:	wxLogWindow(parent, "System Log", false, false)
 ,	pParent(parent)
 ,	cursor(0)
 {

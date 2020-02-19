@@ -238,17 +238,10 @@ FORCEINLINE void operator delete(void* ptr)
 class CMemoryChain
 {
 private:
-#if EDITOR
 	CMemoryChain *next;
 	int		size;
 	byte	*data;
 	byte	*end;
-#else
-	// Safe hack to link to rtl::MemChain; MemChain 'operator new' is protected,
-	// so we needs some kind of hack to link CMemoryChain -> MemChain.
-	// Same (or greater) members size than MemChain.
-	byte	dummy[sizeof(size_t) + sizeof(int)];
-#endif
 public:
 	void* Alloc(size_t size, int alignment = DEFAULT_ALIGNMENT);
 	// creating chain
@@ -275,8 +268,6 @@ FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment
 	Crash helpers
 -----------------------------------------------------------------------------*/
 
-#if EDITOR
-
 // C++excpetion-based guard/unguard system
 #define guard(func)						\
 	{									\
@@ -295,15 +286,6 @@ FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment
 			appUnwindThrow msg;			\
 		}								\
 	}
-
-#else
-
-// do not use guards in game engine ...
-#define guard(func)		{
-#define unguard			}
-#define unguardf(msg)	}
-
-#endif
 
 #define guardSlow		guard
 #define unguardSlow		unguard
@@ -367,7 +349,12 @@ public:
 	void ByteOrderSerialize(void *data, int size);
 #endif
 
-	bool IsStopper()
+	int Tell() const
+	{
+		return ArPos;
+	}
+
+	bool IsStopper() const
 	{
 		return ArStopper == ArPos;
 	}

@@ -132,8 +132,6 @@ void appPrintf(const char *fmt, ...)
 	Simple error/notofication functions
 -----------------------------------------------------------------------------*/
 
-#if EDITOR
-
 void appError(char *fmt, ...)
 {
 	va_list	argptr;
@@ -189,8 +187,6 @@ void appNotify(char *fmt, ...)
 	NotifyBuf[0] = 0;
 	unguard;
 }
-
-#endif
 
 
 char GErrorHistory[2048];
@@ -414,7 +410,5 @@ static void SetDefaultDirectory()
 
 void appInit()
 {
-#if EDITOR
 	SetDefaultDirectory();
-#endif
 }

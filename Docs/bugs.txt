@@ -1,0 +1,45 @@
+- after editing something with gizmo, edited object in PropGrid should be updated (partially)
+
+- wxTimer: exceptions not handled, simply ignored; side effect: exception (assert) in WPropEdit::OnTimer() ignored!
+
+- bool property editor:
+  - white border around checked non-selected property checkbox
+  - displaying "true/false" instead of checkbox for readonly properties
+
+- tooltip window will be cut (overdrawn) by opengl viewport
+  - use alternative hint display (statusbar, help panel etc)
+  * more info:
+    http://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=309185
+  * FIX:
+    1) remove following lines from MyApp::OnInit():
+	frame->SetToolTip("\n");
+	frame->SetToolTip(NULL);
+       (allows multiline tooltip)
+    2) remove section from application.mainfest:
+	<dependency>
+	  <dependentAssembly>
+	    <assemblyIdentity type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0'
+	      processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*' />
+	  </dependentAssembly>
+	</dependency>
+    Tech info:
+      after this, tooltip becomes correct, and multiline text will be supported.
+    BAD DLL:
+      C:\WINDOWS\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.2600.2982_x-ww_ac3f9c03\COMCTL32.dll
+    GOOD DLL:
+      C:\WINDOWS\SYSTEM32\COMCTL32.DLL
+      (in this case, loaded both dlls!)
+
+- "play" and "pause" buttons behaviour is almost identical
+
+- TArray<> property editor:
+  - TArray<float> has non-editable floats, because each array entry is marked with WDynArrayEntryEditor, which
+    has no editor controls
+    - should make generic ArrayEntryEditor, which will analyze CProperty and decide, which editor to use (no editor,
+      string, combo box ...); best - find a way to attach to already connected editor to add new button(s)
+
+- wxPropertyGrid bugs:
+  - (1.3.1) wxFileProperty bug, overriden with WFileProperty::GetValueAsString() (bug/feature of wxFileName class?)
+  - (1.3.1) crash when removing array entry and double click on next entry, which is moved up to a place of just
+    removed item; crashed in double-click handler of m_propHover, which points to deleted item; fixed in
+    WPropEdit::RemoveArrayEntry() by setting m_propHover to NULL

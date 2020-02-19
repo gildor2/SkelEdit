@@ -1,0 +1,3 @@
+// wxUSE_NO_MANIFEST=0 is required for VC7, VC8+ is generated manifest automatically
+#define wxUSE_NO_MANIFEST 1
+#include "wx/msw/wx.rc"

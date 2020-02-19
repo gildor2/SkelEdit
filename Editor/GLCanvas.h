@@ -34,6 +34,8 @@ private:
 	long			m_mouseX, m_mouseY;
 	bool			m_mouseLeft, m_mouseRight, m_mouseMid;
 
+	void CreateContext();
+
 	DECLARE_EVENT_TABLE()
 };
 

@@ -234,71 +234,125 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	 *-------------------------------*/
 
 	// arrays to temporarily hold loaded data
+	int							numVerts;
 	TArray<CVec3>				Verts;
+	int							numWedges;
 	TArray<VVertex>				Wedges;
-	TArray<VTriangle>			Tris;
+	int							numTris;
+	TArray<VTriangle32>			Tris;
+	int							numMaterials;
 	TArray<VMaterial>			Materials;
+	int							numBones;
 	TArray<VBone>				Bones;
+	int							numSrcInfs;
 	TArray<VRawBoneInfluence>	Infs;
 
+	VChunkHeader Chunk;
+
+	//?? replace all "appError()" here with "MessageBox() + return false"
+
 	// load primary header
-	LOAD_CHUNK(MainHdr, "ACTRHEAD");
-//	if (MainHdr.TypeFlag != 1999801)
-//		appNotify("WARNING: found PSK version %d", MainHdr.TypeFlag);
+	Ar << Chunk;
+	if (strcmp(Chunk.ChunkID, "ACTRHEAD") != 0)
+		appError("ImportPsk: invalid psk file");
 
-	// load points
-	LOAD_CHUNK(PtsHdr, "PNTS0000");
-	int numVerts = PtsHdr.DataCount;
-	Verts.Empty(numVerts);
-	Verts.Add(numVerts);
-	for (i = 0; i < numVerts; i++)
-		Ar << Verts[i];
+	//!! check array sizes, load pskx data
+	while (!Ar.IsEof())
+	{
+		Ar << Chunk;
+//		appNotify("chunk at %d: %s %dx%d", Ar.Tell(), Chunk.ChunkID, Chunk.DataCount, Chunk.DataSize);
+#define CHUNK(name)		( strcmp(Chunk.ChunkID, name) == 0 )
 
-	// load wedges
-	LOAD_CHUNK(WedgHdr, "VTXW0000");
-	int numWedges = WedgHdr.DataCount;
-	Wedges.Empty(numWedges);
-	Wedges.Add(numWedges);
-	for (i = 0; i < numWedges; i++)
-		Ar << Wedges[i];
+		if (CHUNK("PNTS0000"))
+		{
+			numVerts = Chunk.DataCount;
+			Verts.Empty(numVerts);
+			Verts.Add(numVerts);
+			for (i = 0; i < numVerts; i++)
+				Ar << Verts[i];
+		}
+		else if (CHUNK("VTXW0000"))
+		{
+			numWedges = Chunk.DataCount;
+			Wedges.Empty(numWedges);
+			Wedges.Add(numWedges);
+			for (i = 0; i < numWedges; i++)
+			{
+				Ar << Wedges[i];
+				if (numVerts <= 65536)
+					Wedges[i].PointIndex &= 0xFFFF;
+			}
+		}
+		else if (CHUNK("FACE0000"))
+		{
+			numTris = Chunk.DataCount;
+			Tris.Empty(numTris);
+			Tris.Add(numTris);
+			for (i = 0; i < numTris; i++)
+				SerializeTriangle16(Ar, Tris[i]);
+		}
+		else if (CHUNK("FACE3200"))	// pskx
+		{
+			numTris = Chunk.DataCount;
+			Tris.Empty(numTris);
+			Tris.Add(numTris);
+			for (i = 0; i < numTris; i++)
+				SerializeTriangle32(Ar, Tris[i]);
+		}
+		else if (CHUNK("MATT0000"))
+		{
+			// materials are not used
+			numMaterials = Chunk.DataCount;
+			Materials.Empty(numMaterials);
+			Materials.Add(numMaterials);
+			for (i = 0; i < numMaterials; i++)
+				Ar << Materials[i];
+		}
+		else if (CHUNK("REFSKELT"))
+		{
+			numBones = Chunk.DataCount;
+			Bones.Empty(numBones);
+			Bones.Add(numBones);
+			for (i = 0; i < numBones; i++)
+				Ar << Bones[i];
+			if (numBones > MAX_MESH_BONES)
+				appError("Mesh has too much bones (%d)", numBones);
+		}
+		else if (CHUNK("RAWWEIGHTS"))
+		{
+			numSrcInfs = Chunk.DataCount;
+			Infs.Empty(numSrcInfs);
+			Infs.Add(numSrcInfs);
+			for (i = 0; i < numSrcInfs; i++)
+				Ar << Infs[i];
+		}
+		else
+		{
+			assert(Chunk.DataCount > 0 && Chunk.DataSize > 0);
+			appPrintf("unknown chunk: %s\n", Chunk.ChunkID);
+			Ar.Seek(Ar.Tell() + Chunk.DataCount * Chunk.DataSize);
+		}
+	}
 
-	// load faces (triangles)
-	LOAD_CHUNK(FacesHdr, "FACE0000");
-	int numTris = FacesHdr.DataCount;
-	Tris.Empty(numTris);
-	Tris.Add(numTris);
-	for (i = 0; i < numTris; i++)
-		Ar << Tris[i];
+	if (!numBones && !numSrcInfs)
+	{
+		// probably this is a StaticMesh
+		appPrintf("detected StaticMesh, generating dummy skeleton\n");
 
-	// load material info (not used)
-	LOAD_CHUNK(MatrHdr, "MATT0000");
-	int numMaterials = MatrHdr.DataCount;
-	Materials.Empty(numMaterials);
-	Materials.Add(numMaterials);
-	for (i = 0; i < numMaterials; i++)
-		Ar << Materials[i];
+		numBones = 1;
+		VBone *B = new (Bones) VBone;
+		strcpy(B->Name, "dummy");
 
-	// load reference pose skeleton
-	LOAD_CHUNK(BoneHdr, "REFSKELT");
-	int numBones = BoneHdr.DataCount;
-	Bones.Empty(numBones);
-	Bones.Add(numBones);
-	for (i = 0; i < numBones; i++)
-		Ar << Bones[i];
-	if (numBones > MAX_MESH_BONES)
-		appError("Mesh has too much bones (%d)", numBones);
-
-	// load vertex-to-bone weight mapping (influences)
-	LOAD_CHUNK(InfHdr, "RAWWEIGHTS");
-	int numSrcInfs = InfHdr.DataCount;
-	Infs.Empty(numSrcInfs);
-	Infs.Add(numSrcInfs);
-	for (i = 0; i < numSrcInfs; i++)
-		Ar << Infs[i];
-
-	// here, should be end of file
-	if (!Ar.IsEof())
-		appNotify("WARNING: extra bytes in source file (position %X)", Ar.ArPos);
+		numSrcInfs = numVerts;
+		Infs.Add(numVerts);
+		for (i = 0; i < numVerts; i++)
+		{
+			VRawBoneInfluence &Inf = Infs[i];
+			Inf.Weight     = 1.0f;
+			Inf.PointIndex = i;
+			Inf.BoneIndex  = 0;
+		}
+	}
 
 	/*---------------------------------
 	 *	Import data into Mesh
@@ -371,7 +425,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 		// find section triangles
 		for (int t = 0; t < numTris; t++)
 		{
-			const VTriangle &Face = Tris[t];
+			const VTriangle32 &Face = Tris[t];
 			if (Face.MatIndex != Mat)
 				continue;				// different material
 			// add indices for this triangle
@@ -525,7 +579,7 @@ void ImportPsk(CArchive &Ar, CSkeletalMesh &Mesh)
 	Normals.Add(numVerts);
 	for (i = 0; i < numTris; i++)
 	{
-		const VTriangle &Tri = Tris[i];
+		const VTriangle32 &Tri = Tris[i];
 		// get vertex indices
 		int i1 = Wedges[Tri.WedgeIndex[0]].PointIndex;
 		int i2 = Wedges[Tri.WedgeIndex[1]].PointIndex;

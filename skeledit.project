@@ -7,7 +7,7 @@ LIBC       = shared
 #CONSOLE    = 1
 OPTIMIZE   = size
 
-PDB        = 1
+PDB        = 2
 
 !if -d "libs/include"
 	# using locally placed libraries
@@ -15,14 +15,16 @@ PDB        = 1
 	wx_lib = libs
 !else
 	# using global libraries
-	!error IMPLEMENT IT
+	wx_inc = ../Libs/wxWidgets/include
+	wx_lib = ../Libs/wxWidgets/lib/vc_dll
 !endif
 
 
 INCLUDES   = $wx_inc Core Editor Anim
 LIBRARIES  = $wx_lib
 OBJDIR     = obj
-STDLIBS    = wxmsw28 wxmsw28_gl wxcode_msw28_propgrid opengl32 user32
+STDLIBS    = wxbase29u wxmsw29u_core wxmsw29u_xrc wxmsw29u_gl wxmsw29u_propgrid
+STDLIBS   += opengl32 user32
 
 DEFINES    = WXUSINGDLL EDITOR
 
@@ -32,6 +34,7 @@ sources(MAIN) = {
 	Editor/*.cpp
 	Anim/*.cpp
 	Core/*.cpp
+	Editor/MainApp.rc
 }
 
 target(executable, SkelEdit, MAIN, MAIN)

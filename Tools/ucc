@@ -5,6 +5,8 @@
 - cpp: code to check class field offsets (computed from script, and check with
   FOFS() macro in cpp)
 - cpp: code to check native class sizes
+- check UnrealScript MetaData tags - make something similar for #ENUM, #DIRNAME
+  etc (do not place tags into comments)
 
 =cut  =========================================================================
 
