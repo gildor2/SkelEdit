@@ -174,7 +174,7 @@ public:
 		unsigned currTime = GetMilliseconds();
 		float frameTime = (currTime - m_lastFrameTime) / 1000.0f;
 		m_lastFrameTime = currTime;
-		DrawTextRight("FPS: "S_GREEN"%5.1f", 1.0f / frameTime);
+		DrawTextRight("FPS: " S_GREEN "%5.1f", 1.0f / frameTime);
 
 		// prepare frame
 		RenderBackground();
@@ -199,7 +199,7 @@ public:
 				static const char* labels[3] = {
 					"X", "Y", "Z"
 				};
-				DrawText3D(tmp, S_CYAN"%s", labels[i]);
+				DrawText3D(tmp, S_CYAN "%s", labels[i]);
 			}
 			glEnd();
 		}
@@ -423,7 +423,7 @@ public:
 		guard(WMainFrame::ImportMesh);
 
 		wxFileName fn = Filename;	// using wxFileName here for GetName() function
-		m_meshFilename = "Imported_" + fn.GetName() + "."MESH_EXTENSION;
+		m_meshFilename = "Imported_" + fn.GetName() + "." MESH_EXTENSION;
 		if (EditorMesh) delete EditorMesh;
 
 		appSetNotifyHeader("Importing mesh from %s", Filename);
@@ -800,7 +800,7 @@ protected:
 		if (dlg.ShowModal() == wxID_OK)
 		{
 			wxFileName fn = dlg.GetFilename();
-			m_meshFilename = "Imported_" + fn.GetName() + "."MESH_EXTENSION;
+			m_meshFilename = "Imported_" + fn.GetName() + "." MESH_EXTENSION;
 			if (EditorMesh) delete EditorMesh;
 
 			wxString filename = dlg.GetPath();
@@ -878,7 +878,7 @@ protected:
 		if (dlg.ShowModal() == wxID_OK)
 		{
 			wxFileName fn = dlg.GetFilename();
-			m_animFilename = "Imported_" + fn.GetName() + "."ANIM_EXTENSION;
+			m_animFilename = "Imported_" + fn.GetName() + "." ANIM_EXTENSION;
 			if (EditorAnim) delete EditorAnim;
 
 			wxString filename = dlg.GetPath();
@@ -1325,7 +1325,7 @@ public:
 				try
 				{
 					appNotify("Saving mesh to autosave");
-					CFile Ar("autosave."MESH_EXTENSION, false);
+					CFile Ar("autosave." MESH_EXTENSION, false);
 					SerializeObject(EditorMesh, Ar);
 					savedMesh = true;
 				}
@@ -1337,7 +1337,7 @@ public:
 				try
 				{
 					appNotify("Saving animations to autosave");
-					CFile Ar("autosave."ANIM_EXTENSION, false);
+					CFile Ar("autosave." ANIM_EXTENSION, false);
 					SerializeObject(EditorAnim, Ar);
 					savedAnim = true;
 				}

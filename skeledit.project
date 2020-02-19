@@ -15,15 +15,15 @@ PDB        = 2
 	wx_lib = libs
 !else
 	# using global libraries
-	wx_inc = ../Libs/wxWidgets/include
-	wx_lib = ../Libs/wxWidgets/lib/vc_dll
+	wx_inc = ../Libs/wxWidgets3/include
+	wx_lib = ../Libs/wxWidgets3/lib/vc14x_dll
 !endif
 
 
-INCLUDES   = $wx_inc Core Editor Anim
+INCLUDES   = $wx_inc $wx_lib/mswu Core Editor Anim
 LIBRARIES  = $wx_lib
 OBJDIR     = obj
-STDLIBS    = wxbase29u wxmsw29u_core wxmsw29u_xrc wxmsw29u_gl wxmsw29u_propgrid
+STDLIBS    = wxbase31u.lib wxmsw31u_core wxmsw31u_xrc wxmsw31u_gl wxmsw31u_propgrid
 STDLIBS   += opengl32 user32
 
 DEFINES    = WXUSINGDLL EDITOR

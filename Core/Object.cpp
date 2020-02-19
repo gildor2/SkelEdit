@@ -120,7 +120,7 @@ void SerializeObject(CObject *Obj, CArchive &Ar)
 		// get archive version
 		Ar << AR_INDEX(Ar.ArVer);
 		if (Ar.ArVer <= 0 || Ar.ArVer > ARCHIVE_VERSION)
-			appError("Loading file of a newer version %d, current version is "STR(ARCHIVE_VERSION), Ar.ArVer);
+			appError("Loading file of a newer version %d, current version is " STR(ARCHIVE_VERSION), Ar.ArVer);
 	}
 	else
 	{

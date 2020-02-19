@@ -675,7 +675,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals, bool Texturing)
 		glEnable(GL_NORMALIZE);
 		glEnable(GL_LIGHTING);
 		static const float lightPos[4]      = {1000, -2000, 1000, 0};
-		static const float lightAmbient[4]  = {0.3, 0.3, 0.3, 1};
+		static const float lightAmbient[4]  = {0.3f, 0.3f, 0.3f, 1};
 		static const float specIntens[4]    = {1, 1, 1, 0};
 		glEnable(GL_COLOR_MATERIAL);
 		glEnable(GL_LIGHT0);
@@ -691,7 +691,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals, bool Texturing)
 		CCoords Transform;
 		Transform.Zero();
 		const CMeshPoint &P = Lod.Points[i];
-		// prepare weighted transfîrmation
+		// prepare weighted transfï¿½rmation
 		for (int j = 0; j < MAX_VERTEX_INFLUENCES; j++)
 		{
 			const CPointWeight &W = P.Influences[j];
@@ -719,7 +719,7 @@ void CSkelMeshInstance::DrawMesh(bool Wireframe, bool Normals, bool Texturing)
 	for (int secIdx = 0; secIdx < Lod.Sections.Num(); secIdx++)
 	{
 		const CMeshSection &Sec = Lod.Sections[secIdx];
-		DrawTextLeft(S_GREEN"Section %d:"S_WHITE" %d tris", secIdx, Sec.NumIndices / 3);
+		DrawTextLeft(S_GREEN "Section %d:" S_WHITE " %d tris", secIdx, Sec.NumIndices / 3);
 
 		// SetMaterial()
 		if (!Texturing || Wireframe)
