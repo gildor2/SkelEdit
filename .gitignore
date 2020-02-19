@@ -1,7 +1,16 @@
+# binaries
+SkelEdit.exe
+SkelEdit.exe.manifest
+SkelEdit.pdb
 wx*.dll
-xrc/gui.pjd.bak
+# generated files
 typeinfo.bin
 resource.bin
+# backup files
+xrc/gui.pjd.bak
+# object files
+makefile.mak
+obj/
+# configs, logs etc
 notify.log
 config.cfg
-makefile.mak
