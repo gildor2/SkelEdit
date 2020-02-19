@@ -36,6 +36,10 @@ thread mentioned in this readme above.
 
 Changes
 ~~~~~~~
+19.02.2020
+- upgrated to wxWidgets 3.1.3
+- recompiled with VS2015
+
 17.09.2015
 - recompiled with VC10
 
