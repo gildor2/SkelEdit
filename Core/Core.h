@@ -133,6 +133,8 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 #	define vsnprintf		_vsnprintf
 #	define FORCEINLINE		__forceinline
 #	define NORETURN			__declspec(noreturn)
+#	define stricmp				_stricmp
+#	define strnicmp				_strnicmp
 	// disable some warnings
 #	pragma warning(disable : 4018)			// signed/unsigned mismatch
 #	pragma warning(disable : 4127)			// conditional expression is constant
@@ -156,6 +158,8 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 #	else
 #		define FORCEINLINE		inline
 #	endif
+#	define stricmp				strcasecmp
+#	define strnicmp				strncasecmp
 
 #else
 
@@ -189,7 +193,7 @@ void appError(const char *fmt, ...);
 
 // log some interesting information
 void appSetNotifyHeader(const char *fmt, ...);
-void appNotify(char *fmt, ...);
+void appNotify(const char *fmt, ...);
 
 void* LoadFile(const char* filename);
 
@@ -371,9 +375,9 @@ public:
 	virtual ~CArchive()
 	{}
 
-	virtual void Seek(int Pos) = NULL;
-	virtual bool IsEof() = NULL;
-	virtual void Serialize(void *data, int size) = NULL;
+	virtual void Seek(int Pos) = 0;
+	virtual bool IsEof() = 0;
+	virtual void Serialize(void *data, int size) = 0;
 #if LITTLE_ENDIAN
 	FORCEINLINE void ByteOrderSerialize(void *data, int size)
 	{

@@ -120,9 +120,9 @@ private:
 };
 
 
-BEGIN_EVENT_TABLE(WNewBoneObject, wxDialog)
+wxBEGIN_EVENT_TABLE(WNewBoneObject, wxDialog)
 	EVT_CHOICE(XRCID("ID_BONENAME"), WNewBoneObject::OnBoneChanged)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 
 /*-----------------------------------------------------------------------------
@@ -135,7 +135,9 @@ inline unsigned GetMilliseconds()
 #if _WIN32
 	return GetTickCount();
 #else
-#error Port this!
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (ts.tv_nsec / 1000000) + ((uint64_t)ts.tv_sec * 1000ull);
 #endif
 }
 
@@ -422,7 +424,7 @@ public:
 	{
 		guard(WMainFrame::ImportMesh);
 
-		wxFileName fn = Filename;	// using wxFileName here for GetName() function
+		wxFileName fn(Filename);	// using wxFileName here for GetName() function
 		m_meshFilename = "Imported_" + fn.GetName() + "." MESH_EXTENSION;
 		if (EditorMesh) delete EditorMesh;
 
@@ -820,7 +822,7 @@ protected:
 
 	void OnLoadMesh(wxCommandEvent&)
 	{
-#define MESH_FILESTRING			"Skeletal mesh files (*."MESH_EXTENSION")|*."MESH_EXTENSION
+#define MESH_FILESTRING			"Skeletal mesh files (*." MESH_EXTENSION ")|*." MESH_EXTENSION
 		guard(WMainFrame::OnLoadMesh);
 
 		StopAnimation();
@@ -898,7 +900,7 @@ protected:
 	void OnLoadAnim(wxCommandEvent&)
 	{
 		guard(WMainFrame::OnLoadAnim);
-#define ANIM_FILESTRING			"Skeletal animation files (*."ANIM_EXTENSION")|*."ANIM_EXTENSION
+#define ANIM_FILESTRING			"Skeletal animation files (*." ANIM_EXTENSION ")|*." ANIM_EXTENSION
 
 		wxFileDialog dlg(this, "Load animations from file ...", *GCfg.AnimDataDirectory, "",
 			ANIM_FILESTRING,
@@ -1361,4 +1363,4 @@ public:
 	}
 };
 
-IMPLEMENT_APP(WApp)
+wxIMPLEMENT_APP(WApp);

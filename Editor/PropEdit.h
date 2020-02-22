@@ -2,9 +2,11 @@
 #define __PROPEDIT_H__
 
 
+struct CPropLink;
+
 class WPropEdit : public wxPropertyGrid
 {
-	friend struct CPropLink;
+	friend CPropLink;
 
 public:
 	WPropEdit(wxWindow *parent, wxWindowID id = wxID_ANY,
@@ -20,7 +22,7 @@ public:
 	/**
 	 *	Detach data
 	 */
-	inline void DetachObject();
+	void DetachObject();
 	/**
 	 *	Update grid data for specified property and all its subproperties. 'type'
 	 *	should be specified for m_rootProp only, because there is no CProperty for

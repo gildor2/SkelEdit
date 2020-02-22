@@ -11,7 +11,7 @@
 
 
 static char lineBuffer[MAX_CMDLINE];
-static char *c_argv[MAX_ARGS];
+static const char *c_argv[MAX_ARGS];
 static int  c_argc;
 
 

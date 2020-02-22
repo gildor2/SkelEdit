@@ -1,6 +1,8 @@
 #if _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#else
+#include <unistd.h>					// syscalls
 #endif
 
 #include "Core.h"
@@ -162,7 +164,7 @@ void appSetNotifyHeader(const char *fmt, ...)
 }
 
 
-void appNotify(char *fmt, ...)
+void appNotify(const char *fmt, ...)
 {
 	guard(appNotify);
 	va_list	argptr;
@@ -404,7 +406,17 @@ static void SetDefaultDirectory()
 }
 
 #else
-#error Port this!
+
+static void SetDefaultDirectory()
+{
+	TString<256> Buf;
+	if (readlink("/proc/self/exe", ARRAY_ARG(Buf)) == -1)
+		return;
+	char *s = Buf.rchr('/');
+	if (s) *s = 0;
+	chdir(Buf);
+}
+
 #endif
 
 
