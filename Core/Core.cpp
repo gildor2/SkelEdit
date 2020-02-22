@@ -132,7 +132,7 @@ void appPrintf(const char *fmt, ...)
 	Simple error/notofication functions
 -----------------------------------------------------------------------------*/
 
-void appError(char *fmt, ...)
+void appError(const char *fmt, ...)
 {
 	va_list	argptr;
 	va_start(argptr, fmt);

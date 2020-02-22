@@ -9,24 +9,39 @@ OPTIMIZE   = size
 
 PDB        = 2
 
-!if -d "libs/include"
-	# using locally placed libraries
-	wx_inc = libs/include
-	wx_lib = libs
-!else
-	# using global libraries
-	wx_inc = ../Libs/wxWidgets3/include
-	wx_lib = ../Libs/wxWidgets3/lib/vc14x_dll
-!endif
 
-
-INCLUDES   = $wx_inc $wx_lib/mswu Core Editor Anim
-LIBRARIES  = $wx_lib
+DEFINES    = EDITOR
+INCLUDES   = Core Editor Anim
 OBJDIR     = obj/$PLATFORM
 STDLIBS    = wxbase31u.lib wxmsw31u_core wxmsw31u_xrc wxmsw31u_gl wxmsw31u_propgrid
 STDLIBS   += opengl32 user32
 
-DEFINES    = WXUSINGDLL EDITOR
+
+# wxWidgets setup
+
+!if "$COMPILER" eq "VisualC"
+
+	!if -d "libs/include"
+		# using locally placed libraries
+		wx_inc = libs/include
+		wx_lib = libs
+	!else
+		# using global libraries
+		wx_inc = ../Libs/wxWidgets3/include
+		wx_lib = ../Libs/wxWidgets3/lib/vc14x_dll
+	!endif
+
+	DEFINES    += WXUSINGDLL
+	INCLUDES   += $wx_inc $wx_lib/mswu
+	LIBRARIES  += $wx_lib
+
+!else
+
+	OPTIONS += `wx-config --cxxflags`   #`bash --version`
+	LINKFLAGS += `wx-config --libs`
+
+!endif
+
 
 ALLOW_MISSING_INCLUDES = 1
 

@@ -147,13 +147,25 @@ template<class T> inline void QSort(T* array, int count, int (*cmpFunc)(const T*
 #		define NOINLINE						// no way ...
 #	endif
 
+#elif __GNUC__
+
+#	define NORETURN				__attribute__((noreturn))
+#	if (__GNUC__ > 3) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 2))
+	// strange, but there is only way to work (inline+always_inline)
+#		define FORCEINLINE		inline __attribute__((always_inline))
+#	else
+#		define FORCEINLINE		inline
+#	endif
+
+#else
+
+#	error "Unsupported compiler"
+
 #endif
 
-#ifndef _XBOX
-#	define LITTLE_ENDIAN	1
-#else
-#	define LITTLE_ENDIAN	0
-#endif
+#undef LITTLE_ENDIAN
+#define LITTLE_ENDIAN	1
+
 
 // necessary types
 typedef unsigned char		byte;
@@ -173,7 +185,7 @@ typedef unsigned short		word;
 
 
 void appPrintf(const char *fmt, ...);
-void appError(char *fmt, ...);
+void appError(const char *fmt, ...);
 
 // log some interesting information
 void appSetNotifyHeader(const char *fmt, ...);
@@ -268,11 +280,27 @@ FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment
 	Crash helpers
 -----------------------------------------------------------------------------*/
 
-// C++excpetion-based guard/unguard system
+// NOTE: using "char __FUNC__[]" instead of "char *__FUNC__" here: in 2nd case compiler
+// will generate static string and static pointer variable, but in the 1st case - only
+// static string.
+
+// C++exception-based guard/unguard system
 #define guard(func)						\
 	{									\
-		static const char __FUNC__[] = #func; \
+		static const char *__FUNC__ = #func; \
 		try {
+
+#if DO_GUARD_MAX
+#define guardfunc						\
+	{									\
+		static const char *__FUNC__ = __FUNCSIG__; \
+		try {
+#else
+#define guardfunc						\
+	{									\
+		static const char *__FUNC__ = __FUNCTION__; \
+		try {
+#endif
 
 #define unguard							\
 		} catch (...) {					\
@@ -280,6 +308,7 @@ FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment
 		}								\
 	}
 
+// TODO: replace unguardf(x) -> __VA_ARGS__
 #define unguardf(msg)					\
 		} catch (...) {					\
 			appUnwindPrefix(__FUNC__);	\
@@ -291,8 +320,13 @@ FORCEINLINE void* operator new[](size_t size, CMemoryChain *chain, int alignment
 #define unguardSlow		unguard
 #define unguardfSlow	unguardf
 
+#define TRY				try
+#define CATCH			catch (...)
+#define CATCH_CRASH		catch (...)
 #define	THROW_AGAIN		throw
-#define THROW			throw 1
+#define THROW			throw 1				// throw something (required for GCC in order to get working appError etc)
+
+
 
 void appUnwindPrefix(const char *fmt);		// not vararg (will display function name for unguardf only)
 NORETURN void appUnwindThrow(const char *fmt, ...);
@@ -554,7 +588,7 @@ template<class T> FORCEINLINE void* operator new(size_t size, TArray<T> &Array)
 }
 
 
-#include "Strings.h"
+#include "StaticString.h"
 #include "Math3D.h"
 #include "Commands.h"
 #include "ScriptParser.h"
