@@ -22,7 +22,7 @@ PDB        = 2
 
 INCLUDES   = $wx_inc $wx_lib/mswu Core Editor Anim
 LIBRARIES  = $wx_lib
-OBJDIR     = obj
+OBJDIR     = obj/$PLATFORM
 STDLIBS    = wxbase31u.lib wxmsw31u_core wxmsw31u_xrc wxmsw31u_gl wxmsw31u_propgrid
 STDLIBS   += opengl32 user32
 

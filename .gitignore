@@ -1,16 +1,27 @@
-# binaries
+# Binaries
 SkelEdit.exe
 SkelEdit.exe.manifest
 SkelEdit.pdb
 wx*.dll
-# generated files
+
+# Visual Studio files
+**/.vs/*
+!.vs/CppProperties.json
+!.vs/launch.vs.json
+!.vs/tasks.vs.json
+
+# Build-generated files
 typeinfo.bin
 resource.bin
-# backup files
+
+# Backup files
+bak/
 xrc/gui.pjd.bak
-# object files
+
+# Object files
 makefile.mak
 obj/
-# configs, logs etc
+
+# Runtime-generated files
 notify.log
 config.cfg

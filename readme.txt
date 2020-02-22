@@ -1,9 +1,9 @@
 SKELEDIT (Skeletal Mesh Editor)
-(c) Konstantin Nosov (Gildor), 2007-2015
+(c) Konstantin Nosov (Gildor), 2007-2020
 
 
 Please support the development by making a donation here:
-http://www.gildor.org/en/donate
+https://www.gildor.org/en/donate
 
 
 System requirements
@@ -15,8 +15,8 @@ OpenGL 1.1 videocard
 
 Web resources
 ~~~~~~~~~~~~~
-SkelEdit thread on www.gildor.org forums:
-http://www.gildor.org/smf/index.php/topic,91.0.html
+SkelEdit thread at gildor.org forums:
+https://www.gildor.org/smf/index.php/topic,91.0.html
 
 
 Command line options
@@ -29,7 +29,7 @@ Additional information
 ~~~~~~~~~~~~~~~~~~~~~~
 SkelEdit were made as a tool for importing and tuning ActorX meshes and animations for one game
 project. It's creation is relative to the umodel, if you need information about reasons of its
-appearance and its purpose you may get some information here: http://www.gildor.org/en/about
+appearance and its purpose you may get some information here: https://www.gildor.org/en/about
 (find "SkelEdit" word in the text if you're too lazy to read full article). Also check the forum
 thread mentioned in this readme above.
 
@@ -37,7 +37,7 @@ thread mentioned in this readme above.
 Changes
 ~~~~~~~
 19.02.2020
-- upgrated to wxWidgets 3.1.3
+- upgraded to wxWidgets 3.1.3
 - recompiled with VS2015
 
 17.09.2015
