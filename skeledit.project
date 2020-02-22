@@ -13,8 +13,12 @@ PDB        = 2
 DEFINES    = EDITOR
 INCLUDES   = Core Editor Anim
 OBJDIR     = obj/$PLATFORM
-STDLIBS    = wxbase31u.lib wxmsw31u_core wxmsw31u_xrc wxmsw31u_gl wxmsw31u_propgrid
-STDLIBS   += opengl32 user32
+
+!if "$PLATFORM" eq "win32" || "$PLATFORM" eq "win64"
+	IS_WINDOWS = 1
+!else
+	IS_WINDOWS = 0
+!endif
 
 
 # wxWidgets setup
@@ -34,11 +38,14 @@ STDLIBS   += opengl32 user32
 	DEFINES    += WXUSINGDLL
 	INCLUDES   += $wx_inc $wx_lib/mswu
 	LIBRARIES  += $wx_lib
+	STDLIBS    = wxbase31u.lib wxmsw31u_core wxmsw31u_xrc wxmsw31u_gl wxmsw31u_propgrid
+	STDLIBS    += opengl32 user32
 
 !else
 
-	OPTIONS += `wx-config --cxxflags`   #`bash --version`
-	LINKFLAGS += `wx-config --libs`
+	OPTIONS   += `wx-config --cxxflags`   #`bash --version`
+	LINKFLAGS += `wx-config --libs core,base,xrc,gl,propgrid`
+	STDLIBS   = stdc++ m GL 			# libm for math.h functions
 
 !endif
 
@@ -49,7 +56,9 @@ sources(MAIN) = {
 	Editor/*.cpp
 	Anim/*.cpp
 	Core/*.cpp
+!if "$IS_WINDOWS" eq "1"
 	Editor/MainApp.rc
+!endif
 }
 
 target(executable, SkelEdit, MAIN, MAIN)
