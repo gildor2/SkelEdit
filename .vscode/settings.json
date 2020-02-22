@@ -1,0 +1,18 @@
+{
+    "files.exclude": {
+        "*.exe": true,
+        "*.bat": true,
+        "*.{cfg,pdb,dll,bin}": true,
+        "package*.sh": true,
+        "src-arc.sh": true,
+        "**/.vs": true,
+        "**/bak": true,
+        "**/Docs": true,
+        "**/obj": true,
+        "LICENSE": true
+    },
+    "files.associations": {
+        "*.project": "perl"
+    },
+    "files.trimTrailingWhitespace": true
+}

@@ -1,0 +1,21 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	// C/C++ options: https://github.com/Microsoft/vscode-cpptools/blob/master/launch.md
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "(No arguments)",
+			"type": "cppvsdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/SkelEdit.exe",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": false,
+			"logging": { "moduleLoad": false }
+		}
+	]
+}

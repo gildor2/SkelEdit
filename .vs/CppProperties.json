@@ -1,0 +1,38 @@
+{
+  "configurations": [
+    {
+      "inheritEnvironments": [ "msvc_x86" ],
+      "name": "Win32-Release",
+      "includePath": [
+        "${env.INCLUDE}",
+        "${workspaceRoot}\\**"
+      ],
+      "defines": [
+        "EDITOR"
+      ],
+      "intelliSenseMode": "windows-msvc-x86",
+      "environments": [
+        {
+          "BuildOptions": ""
+        }
+      ]
+    },
+    {
+      "inheritEnvironments": [ "msvc_x86" ],
+      "name": "Win32-Debug",
+      "includePath": [
+        "${env.INCLUDE}",
+        "${workspaceRoot}\\**"
+      ],
+      "defines": [
+        "EDITOR"
+      ],
+      "intelliSenseMode": "windows-msvc-x86",
+      "environments": [
+        {
+          "BuildOptions": "--debug"
+        }
+      ]
+    }
+  ]
+}
