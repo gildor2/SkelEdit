@@ -196,11 +196,6 @@ var(Extra Data) editnoadd array<MeshSocket> Sockets;
 
 struct MeshMaterial
 {
-	structcpptext
-	{
-		// internal class, encapsulated rendering material
-		friend class CRenderingMaterial;
-	}
 	/**
 	 * #FILENAME Texture: *.bmp;*.tga
 	 * Name of the material file
@@ -209,7 +204,7 @@ struct MeshMaterial
 	/**
 	 * Material, used internally in renderer
 	 */
-	var pointer<CRenderingMaterial> RenMaterial;
+	var pointer<class CRenderingMaterial> RenMaterial;
 
 	structcpptext
 	{

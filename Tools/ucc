@@ -597,7 +597,14 @@ sub ParseField {
 		if ($tok eq "<") {
 			NextTok();			# skip "<"
 			my $tmp = NextTok();
-			CheckIdent($tmp);
+			if ($tmp eq "class" || $tmp eq "struct") {
+				# seems a a forward declaration, allow "struct Ident" etc
+				my $tmp2 = NextTok();
+				CheckIdent($tmp2);
+				$tmp .= " $tmp2";
+			} else {
+				CheckIdent($tmp);
+			}
 			ExpectToken(">", NextTok);
 			$natType = "$tmp*";
 		} else {

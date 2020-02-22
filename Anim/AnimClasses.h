@@ -470,9 +470,6 @@ struct CSkeletalMeshLod
 
 struct CMeshMaterial
 {
-
-	// internal class, encapsulated rendering material
-	friend class CRenderingMaterial;
 	/**
 	 * Name of the material file
 	 */
@@ -480,7 +477,7 @@ struct CMeshMaterial
 	/**
 	 * Material, used internally in renderer
 	 */
-	CRenderingMaterial*			RenMaterial;
+	class CRenderingMaterial*	RenMaterial;
 
 	friend CArchive& operator<<(CArchive &Ar, CMeshMaterial &M)
 	{
