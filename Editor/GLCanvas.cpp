@@ -12,6 +12,7 @@ GLCanvas::GLCanvas(wxWindow *parent)
 ,	m_mouseRight(false)
 ,	m_mouseMid(false)
 ,	m_context(NULL)
+,	m_lastFrameTime(0)
 {}
 
 
@@ -46,6 +47,18 @@ void GLCanvas::OnPaint(wxPaintEvent &event)
 	// OnPaint handlers must always create a wxPaintDC.
 	wxPaintDC dc(this);
 	Render();
+
+	unsigned currentTime = wxGetUTCTimeMillis().GetLo();
+
+	// ensure refresh rate
+	static const int FPS_Restrict = 60;
+	if (m_lastFrameTime)
+	{
+		int delay = (1000 / FPS_Restrict) - (currentTime - m_lastFrameTime);
+		if (delay < 0) delay = 0;
+		wxMilliSleep(delay);
+	}
+	m_lastFrameTime = wxGetUTCTimeMillis().GetLo();
 }
 
 void GLCanvas::OnSize(wxSizeEvent &event)
@@ -152,7 +165,7 @@ void GLCanvas::OnIdle(wxIdleEvent &event)
 {
 	//?? keep viewport constantly updating; check for other way?
 	//?? update when animation launched or view rotated only
-#if 0
+#if 1
 	Refresh(false);				// render via messaging system
 #else
 	Render();					// directly render scene

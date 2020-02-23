@@ -33,6 +33,7 @@ private:
 	wxGLContext		*m_context;
 	long			m_mouseX, m_mouseY;
 	bool			m_mouseLeft, m_mouseRight, m_mouseMid;
+	unsigned		m_lastFrameTime;
 
 	void CreateContext();
 

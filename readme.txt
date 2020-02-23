@@ -36,6 +36,9 @@ thread mentioned in this readme above.
 
 Changes
 ~~~~~~~
+23.02.2020
+- improved CPU usage, limited FPS to 60
+
 19.02.2020
 - upgraded to wxWidgets 3.1.3
 - recompiled with VS2015
