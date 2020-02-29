@@ -3,6 +3,7 @@ SkelEdit.exe
 SkelEdit.exe.manifest
 SkelEdit.pdb
 wx*.dll
+SkelEdit
 
 # Visual Studio files
 **/.vs/*
